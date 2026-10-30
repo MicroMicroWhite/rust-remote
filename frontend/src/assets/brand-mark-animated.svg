@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1280" viewBox="0 0 1280 1280" role="img" aria-label="Animated blue remote connection logo">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#26C8F5"/>
+      <stop offset="41%" stop-color="#087DFF"/>
+      <stop offset="100%" stop-color="#0029CE"/>
+    </linearGradient>
+    <linearGradient id="leftSymbol" x1="0" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="45%" stop-color="#EFF9FF"/>
+      <stop offset="100%" stop-color="#92CDF9"/>
+    </linearGradient>
+    <linearGradient id="rightSymbol" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#D7EEFF"/>
+      <stop offset="100%" stop-color="#92CCF5"/>
+    </linearGradient>
+    <clipPath id="iconShape"><rect x="95" y="94" width="1060" height="1060" rx="260"/></clipPath>
+  </defs>
+  <style>
+    /* Only the two inner shapes move; background remains completely static. */
+    .wing-left, .wing-right { transform-box: view-box; will-change: transform; }
+    .wing-left { transform-origin: 535px 498px; animation: left-float 4.8s cubic-bezier(.45,.05,.25,1) infinite; }
+    .wing-right { transform-origin: 748px 723px; animation: right-float 4.8s cubic-bezier(.45,.05,.25,1) -2.4s infinite; }
+    @keyframes left-float {
+      0%, 100% { transform: translate(0,0) rotate(0deg); }
+      25% { transform: translate(-4px,-6px) rotate(-2.5deg); }
+      50% { transform: translate(1px,2px) rotate(1deg); }
+      75% { transform: translate(-2px,-2px) rotate(-0.8deg); }
+    }
+    @keyframes right-float {
+      0%, 100% { transform: translate(0,0) rotate(0deg); }
+      25% { transform: translate(5px,5px) rotate(2.5deg); }
+      50% { transform: translate(-1px,-2px) rotate(-1deg); }
+      75% { transform: translate(2px,1px) rotate(0.8deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .wing-left, .wing-right { animation: none; }
+    }
+  </style>
+  <rect x="95" y="94" width="1060" height="1060" rx="260" fill="url(#background)"/>
+  <g clip-path="url(#iconShape)">
+    <g class="wing-left">
+      <path d="M 338,360 C 338,302 382,269 436,286 L 681,426 C 726,451 750,480 740,546 C 737,557 735,566 731,576 C 707,551 677,539 649,549 L 403,694 C 370,713 338,688 338,657 Z" fill="url(#leftSymbol)"/>
+    </g>
+    <g class="wing-right">
+      <path d="M 524,679 C 524,654 537,631 563,616 L 872,515 C 908,493 927,502 948,514 C 962,524 966,544 966,571 L 966,880 C 966,928 921,969 873,946 L 557,769 C 534,754 524,733 524,707 Z" fill="url(#rightSymbol)"/>
+    </g>
+  </g>
+</svg>

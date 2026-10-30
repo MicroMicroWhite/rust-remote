@@ -1,0 +1,1 @@
+Linux distribution, Linux, Apple and FreeBSD icons: Simple Icons v15.16.0, https://github.com/simple-icons/simple-icons/tree/15.16.0 (CC0-1.0). SVG paths are unchanged; brand fill colors are added. Windows uses a local four-square Windows 11-style mark. Brand marks belong to their respective owners.

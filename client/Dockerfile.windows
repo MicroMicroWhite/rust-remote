@@ -1,0 +1,34 @@
+ARG RUST_IMAGE=rust:1.90-slim-bookworm
+FROM --platform=$BUILDPLATFORM ${RUST_IMAGE} AS toolchain
+ARG APT_MIRROR
+RUN if [ -n "$APT_MIRROR" ]; then sed -i "s|http://deb.debian.org|${APT_MIRROR}|g" /etc/apt/sources.list.d/debian.sources; fi
+RUN apt-get update && apt-get install -y --no-install-recommends clang lld llvm cmake build-essential && rm -rf /var/lib/apt/lists/*
+ARG CARGO_MIRROR
+ENV CARGO_HOME=/usr/local/cargo
+RUN mkdir -p /usr/local/cargo && if [ -n "$CARGO_MIRROR" ]; then printf '[source.crates-io]\nreplace-with = "mirror"\n[source.mirror]\nregistry = "sparse+%s/index/"\n' "$CARGO_MIRROR" > /usr/local/cargo/config.toml; fi
+RUN --mount=type=cache,target=/usr/local/cargo/registry cargo install cargo-xwin --locked --version 0.20.2
+ENV PATH=/usr/local/cargo/bin:$PATH
+FROM toolchain AS build
+ARG TARGET_ARCH=x86_64
+WORKDIR /src
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+ARG RUSTUP_MIRROR
+RUN printf 'precedence ::ffff:0:0/96 100\n' >> /etc/gai.conf
+ARG CLIENT_CONFIG_HASH
+ARG REMOTE_DEFAULT_ALLOW_INSECURE=false
+RUN --mount=type=secret,id=client_server \
+    --mount=type=secret,id=client_token \
+    --mount=type=cache,target=/root/.cache/cargo-xwin \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/src/target,sharing=locked \
+    target="$([ "$TARGET_ARCH" = aarch64 ] && echo aarch64-pc-windows-msvc || echo x86_64-pc-windows-msvc)" \
+    && xwin_arch="$([ "$TARGET_ARCH" = aarch64 ] && echo aarch64 || echo x86_64)" \
+    && if [ -n "$RUSTUP_MIRROR" ]; then export RUSTUP_DIST_SERVER="$RUSTUP_MIRROR"; fi \
+    && rustup target add "$target" \
+    && export REMOTE_DEFAULT_SERVER="$(cat /run/secrets/client_server 2>/dev/null || true)" \
+    && export REMOTE_DEFAULT_TOKEN="$(cat /run/secrets/client_token 2>/dev/null || true)" \
+    && XWIN_ARCH="$xwin_arch" cargo xwin build --locked --release --target "$target" \
+    && mkdir /out && cp "target/$target/release/rust-remote-client.exe" /out/
+FROM scratch AS export
+COPY --from=build /out/ /

@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+**/target
+**/data
+**/.DS_Store
+**/.rust-remote-device-id
+**/dist
+frontend
+backend/tests

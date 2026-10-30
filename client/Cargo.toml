@@ -1,0 +1,40 @@
+[package]
+name = "rust-remote-client"
+version = "0.3.11"
+edition = "2021"
+rust-version = "1.90"
+
+[profile.release]
+# Keep unwinding for the Windows service's panic handler.
+# Level 2 keeps screen encoding faster than size-only optimization; full LTO
+# and the reduced feature set keep the executable smaller than the old build.
+opt-level = 2
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+
+[dependencies]
+portable-pty = "=0.9.0"
+anyhow = "1"
+base64 = "0.22"
+clap = { version = "4", default-features = false, features = ["std", "derive", "env", "help", "usage", "error-context"] }
+futures-util = { version = "0.3", default-features = false, features = ["std", "sink"] }
+hostname = "0.4"
+image = { version = "0.24", default-features = false, features = ["jpeg"] }
+screenshots = "0.8"
+serde_json = "1"
+sha2 = "0.10"
+sysinfo = { version = "0.33", default-features = false, features = ["system", "network", "disk"] }
+tokio = { version = "1", default-features = false, features = ["rt", "net", "time", "sync", "macros", "signal", "process", "io-util"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
+tracing = "0.1"
+uuid = { version = "1", features = ["v4"] }
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+enigo = { version = "0.3", default-features = false, features = ["x11rb"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter", "json"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Services", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
