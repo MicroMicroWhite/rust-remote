@@ -10,6 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { BrandMark } from "./BrandMark";
+import { useTranslation } from "react-i18next";
 
 const LoadingContext = createContext<(() => () => void) | null>(null);
 const minimumDuration = 280;
@@ -35,6 +36,7 @@ export function PageTransition({
   children: ReactNode;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   const [pending, setPending] = useState(0);
   const [phase, setPhase] = useState<"loading" | "leaving" | "hidden">(
     "loading",
@@ -96,7 +98,7 @@ export function PageTransition({
           >
             <div className="page-transition-indicator">
               <BrandMark />
-              <span>正在加载…</span>
+              <span>{t("loadingShort")}</span>
               <span className="page-transition-progress" aria-hidden="true" />
             </div>
           </div>,

@@ -15,19 +15,19 @@ Rust Remote 是一个可自行部署的 Windows / Linux 远程设备管理平台
 
 安全入口保护管理控制台，并提供简洁的管理员登录页面。
 
-![Rust Remote 登录页](images/login.png)
+![Rust Remote 登录页](images/zh/login.png)
 
 ### 设备总览
 
 主页汇总设备总数、在线与离线状态，并支持按操作系统、版本、地址和状态筛选。
 
-![Rust Remote 设备管理](images/home.png)
+![Rust Remote 设备管理](images/zh/home.png)
 
 ### 连接详情
 
 设备工作台集中展示系统资源、网络地址、运行身份、进程、端口、文件、终端和上下线记录。
 
-![Rust Remote 连接详情](images/device-detail.png)
+![Rust Remote 连接详情](images/zh/device-detail.png)
 
 ## 功能
 

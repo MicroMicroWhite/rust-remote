@@ -1,13 +1,15 @@
+import i18n from "./i18n";
+
 export function bytes(n: number) {
   if (!n) return "0 B";
   const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), 4);
   return `${(n / 1024 ** i).toFixed(i ? 1 : 0)} ${["B", "KiB", "MiB", "GiB", "TiB"][i]}`;
 }
 export function date(n: number) {
-  return new Date(n * 1000).toLocaleString("zh-CN", { hour12: false });
+  return new Date(n * 1000).toLocaleString(i18n.language.startsWith("en") ? "en-US" : "zh-CN", { hour12: false });
 }
 export function dateOnly(n: number) {
-  return new Date(n * 1000).toLocaleDateString("zh-CN");
+  return new Date(n * 1000).toLocaleDateString(i18n.language.startsWith("en") ? "en-US" : "zh-CN");
 }
 export function dateTime(n: number) {
   const value = new Date(n * 1000);
@@ -16,8 +18,8 @@ export function dateTime(n: number) {
 }
 export function relativeTime(n: number) {
   const seconds = Math.max(0, Math.floor(Date.now() / 1000 - n));
-  if (seconds < 60) return "刚刚";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`;
-  return `${Math.floor(seconds / 86400)} 天前`;
+  if (seconds < 60) return i18n.t("justNow");
+  if (seconds < 3600) return i18n.t("minutesAgo", { count: Math.floor(seconds / 60) });
+  if (seconds < 86400) return i18n.t("hoursAgo", { count: Math.floor(seconds / 3600) });
+  return i18n.t("daysAgo", { count: Math.floor(seconds / 86400) });
 }

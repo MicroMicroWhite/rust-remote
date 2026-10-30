@@ -5,8 +5,10 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { terminalSocket } from "./api";
+import { useTranslation } from "react-i18next";
 
 export default function TerminalView({ id, disabled }: { id: string; disabled: boolean }) {
+  const { t } = useTranslation();
   const host = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);
   const socket = useRef<WebSocket | null>(null);
@@ -34,7 +36,7 @@ export default function TerminalView({ id, disabled }: { id: string; disabled: b
     const send = (value: unknown) => {
       if (ws?.readyState !== WebSocket.OPEN || disposed) return;
       if (ws.bufferedAmount > 256 * 1024) {
-        setDetail("网络发送缓冲已满，会话已关闭，请重新连接。");
+        setDetail(t("terminalBufferFull"));
         ws.close();
         return;
       }
@@ -87,23 +89,23 @@ export default function TerminalView({ id, disabled }: { id: string; disabled: b
             term.write(data, () => { if (ready) send({ type: "ack", sequence: message.sequence }); });
           } else if (message.type === "exit") {
             ended = true;
-            setDetail(`终端进程已退出${message.exit_code == null ? "" : `，退出码 ${message.exit_code}`}。`);
+            setDetail(t("terminalExited", { code: message.exit_code == null ? "" : `, exit code ${message.exit_code}` }));
           } else if (message.type === "error") {
             ended = true;
-            setDetail(message.detail || "终端连接失败。");
+            setDetail(message.detail || t("terminalConnectionFailed"));
           }
         } catch {
-          setDetail("终端数据无效，请重新连接。");
+          setDetail(t("invalidTerminalData"));
           ws?.close();
         }
       };
-      ws.onerror = () => { if (!disposed) setDetail("无法连接终端，请检查设备和网络状态。"); };
+      ws.onerror = () => { if (!disposed) setDetail(t("terminalConnectionFailed")); };
       ws.onclose = () => {
         ready = false;
         term.options.disableStdin = true;
         if (!disposed) {
           setStatus("closed");
-          if (!ended) setDetail((previous) => previous || "连接已关闭，重新连接将创建新的终端会话。");
+          if (!ended) setDetail((previous) => previous || t("terminalClosed"));
         }
       };
     }
@@ -122,24 +124,24 @@ export default function TerminalView({ id, disabled }: { id: string; disabled: b
 
   return <section className="table-panel terminal-panel">
     <div className="table-toolbar">
-      <div className="toolbar-title"><TerminalIcon size={17} />交互式终端
+      <div className="toolbar-title"><TerminalIcon size={17} />{t("interactiveTerminal")}
         <Tag color={status === "ready" ? "success" : "default"}>
-          {{ idle: "未连接", connecting: "连接中", ready: "已连接", closed: "已断开" }[status]}
+          {{ idle: t("notConnected"), connecting: t("connecting"), ready: t("connected"), closed: t("disconnected") }[status]}
         </Tag>
       </div>
       <div className="toolbar-actions">
-        <Button onClick={() => terminal.current?.clear()}>清空显示</Button>
+        <Button onClick={() => terminal.current?.clear()}>{t("clearDisplay")}</Button>
         {status === "ready" || status === "connecting" ?
-          <Button onClick={() => socket.current?.close()}>断开</Button> :
+          <Button onClick={() => socket.current?.close()}>{t("disconnect")}</Button> :
           <Button type="primary" disabled={disabled} onClick={() => setAttempt((n) => n + 1)}>
-            {attempt ? "重新连接" : "连接终端"}
+            {attempt ? t("reconnect") : t("connectTerminal")}
           </Button>}
       </div>
     </div>
-    <div ref={host} className="interactive-terminal" aria-label="交互式终端" />
+    <div ref={host} className="interactive-terminal" aria-label={t("interactiveTerminal")} />
     <div className="panel-note" role="status">
-      {disabled ? "此设备已禁用终端。" : detail || "工作目录和环境变量在本次会话内保留，支持 Tab 补全和 Ctrl+C。"}
-      <br />切换页面、刷新或断线会结束会话；重新连接会启动新的 Shell。以被控端当前账户权限运行。
+      {disabled ? t("terminalDisabled") : detail || t("terminalSessionNote")}
+      <br />{t("terminalSessionWarning")}
     </div>
   </section>;
 }

@@ -41,17 +41,8 @@ import {
   ScreenView,
   ShellView,
 } from "./DeviceTools";
+import { useTranslation } from "react-i18next";
 
-const tabs = [
-  { key: "overview", label: "设备概览", icon: <LayoutDashboard size={15} /> },
-  { key: "files", label: "文件管理", icon: <Folder size={15} /> },
-  { key: "screen", label: "屏幕观察", icon: <Monitor size={15} /> },
-  { key: "processes", label: "进程列表", icon: <Activity size={15} /> },
-  { key: "environment", label: "环境变量", icon: <Variable size={15} /> },
-  { key: "ports", label: "端口连接", icon: <Network size={15} /> },
-  { key: "shell", label: "终端命令", icon: <Terminal size={15} /> },
-  { key: "connections", label: "上下线记录", icon: <Activity size={15} /> },
-];
 export default function DeviceWorkspace({
   device,
   tab,
@@ -59,6 +50,17 @@ export default function DeviceWorkspace({
   device: Device;
   tab: string;
 }) {
+  const { t } = useTranslation();
+  const tabs = [
+    { key: "overview", label: t("deviceOverview"), icon: <LayoutDashboard size={15} /> },
+    { key: "files", label: t("fileManagement"), icon: <Folder size={15} /> },
+    { key: "screen", label: t("screenWatching"), icon: <Monitor size={15} /> },
+    { key: "processes", label: t("processList"), icon: <Activity size={15} /> },
+    { key: "environment", label: t("environmentVariables"), icon: <Variable size={15} /> },
+    { key: "ports", label: t("portConnections"), icon: <Network size={15} /> },
+    { key: "shell", label: t("terminalCommands"), icon: <Terminal size={15} /> },
+    { key: "connections", label: t("connectionHistory"), icon: <Activity size={15} /> },
+  ];
   const [info, setInfo] = useState<Info | null>(null);
   const [busy, setBusy] = useState(device.online);
   const [error, setError] = useState("");
@@ -103,7 +105,7 @@ export default function DeviceWorkspace({
           <Button
             type="text"
             icon={<ArrowLeft size={17} />}
-            aria-label="返回设备列表"
+            aria-label={t("backToDeviceList")}
             onClick={() => navigate("/devices")}
           />
           <span className="device-heading-icon">
@@ -140,7 +142,7 @@ export default function DeviceWorkspace({
           className="page-alert"
           type="error"
           showIcon
-          title="操作未完成"
+          title={t("operationIncomplete")}
           description={error}
           closable
           onClose={() => setError("")}
@@ -151,8 +153,8 @@ export default function DeviceWorkspace({
           className="page-alert"
           type="warning"
           showIcon
-          title="设备已离线"
-          description="远程操作暂不可用。仍可查看连接记录和最近保存的网络信息。"
+          title={t("deviceOffline")}
+          description={t("offlineHint")}
         />
       )}
       {activeTab === "connections" ? (
@@ -162,8 +164,8 @@ export default function DeviceWorkspace({
           <div className="section-toolbar">
             <span className="secondary-text">
               {fetchedAt
-                ? `系统信息获取于 ${fetchedAt}${!device.online ? "（离线前）" : ""}`
-                : "设备概览"}
+                ? t("infoFetchedAt", { time: fetchedAt, offline: !device.online ? t("offlineBefore") : "" })
+                : t("deviceOverview")}
             </span>
             <Button
               icon={<RefreshCw size={14} />}
@@ -171,12 +173,12 @@ export default function DeviceWorkspace({
               disabled={!device.online}
               onClick={() => void refresh()}
             >
-              刷新信息
+              {t("refreshInfo")}
             </Button>
           </div>
           <div className="overview-grid">
             <Card
-              title="系统信息"
+              title={t("systemInfo")}
               className="detail-card"
               extra={<Tag>{device.version}</Tag>}
             >
@@ -190,12 +192,12 @@ export default function DeviceWorkspace({
                     items={[
                       {
                         key: "hostname",
-                        label: "主机名称",
+                        label: t("hostname"),
                         children: info.hostname,
                       },
                       {
                         key: "os",
-                        label: "操作系统",
+                        label: t("os"),
                         children: (
                           <span className="system-value">
                             <OperatingSystemIcon
@@ -214,17 +216,17 @@ export default function DeviceWorkspace({
                       },
                       {
                         key: "uptime",
-                        label: "系统运行时间",
-                        children: `${Math.floor(info.uptime / 3600)} 小时 ${Math.floor((info.uptime % 3600) / 60)} 分钟`,
+                        label: t("uptime"),
+                        children: `${Math.floor(info.uptime / 3600)} h ${Math.floor((info.uptime % 3600) / 60)} min`,
                       },
                     ]}
                   />
                   <div className="resource-meters">
                     <div className="resource-meter cpu-meter">
                       <div>
-                        <span className="resource-label"><Cpu size={15} />CPU 使用率</span>
+                        <span className="resource-label"><Cpu size={15} />{t("cpuUsage")}</span>
                         <span className="resource-tags">
-                          <Tag>{info.cpu_count} 核</Tag>
+                          <Tag>{info.cpu_count} {t("cores")}</Tag>
                           <Tag>{info.arch}</Tag>
                           <strong>{Math.round(info.cpu_usage ?? 0)}%</strong>
                         </span>
@@ -236,7 +238,7 @@ export default function DeviceWorkspace({
                     </div>
                     <div className="resource-meter">
                       <div>
-                        <span className="resource-label"><Activity size={15} />内存使用</span>
+                        <span className="resource-label"><Activity size={15} />{t("memoryUsage")}</span>
                         <span>{bytes(info.memory_used)} / {bytes(info.memory_total)}</span>
                       </div>
                       <Progress
@@ -248,36 +250,36 @@ export default function DeviceWorkspace({
                   <div className="io-grid">
                     <div className="io-item">
                       <span className="io-icon network"><Download size={15} /></span>
-                      <span><small>网络下行累计</small><strong>{bytes(info.network_received ?? 0)}</strong></span>
+                      <span><small>{t("networkDownload")}</small><strong>{bytes(info.network_received ?? 0)}</strong></span>
                     </div>
                     <div className="io-item">
                       <span className="io-icon network"><Upload size={15} /></span>
-                      <span><small>网络上行累计</small><strong>{bytes(info.network_transmitted ?? 0)}</strong></span>
+                      <span><small>{t("networkUpload")}</small><strong>{bytes(info.network_transmitted ?? 0)}</strong></span>
                     </div>
                     <div className="io-item">
                       <span className="io-icon disk"><HardDrive size={15} /></span>
-                      <span><small>磁盘读取累计</small><strong>{bytes(info.disk_read ?? 0)}</strong></span>
+                      <span><small>{t("diskRead")}</small><strong>{bytes(info.disk_read ?? 0)}</strong></span>
                     </div>
                     <div className="io-item">
                       <span className="io-icon disk"><HardDrive size={15} /></span>
-                      <span><small>磁盘写入累计</small><strong>{bytes(info.disk_written ?? 0)}</strong></span>
+                      <span><small>{t("diskWrite")}</small><strong>{bytes(info.disk_written ?? 0)}</strong></span>
                     </div>
                   </div>
                 </>
               ) : (
                 <div className="detail-placeholder">
                   {device.online
-                    ? "系统信息暂不可用，请重试。"
-                    : "设备重新连接后可获取系统信息。"}
+                    ? t("infoUnavailable")
+                    : t("reconnectForInfo")}
                 </div>
               )}
             </Card>
             <Card
-              title="网络地址"
+              title={t("networkAddresses")}
               className="detail-card"
               extra={
                 <span className="secondary-text">
-                  {device.online ? "最近上报" : "历史信息"}
+                  {device.online ? t("recentlyReported") : t("historicalInfo")}
                 </span>
               }
             >
@@ -287,7 +289,7 @@ export default function DeviceWorkspace({
                 items={[
                   {
                     key: "lan",
-                    label: "本机网卡地址",
+                    label: t("localAddress"),
                     children: addresses.length ? (
                       <div className="address-list">
                         {addresses.map((a) => (
@@ -300,21 +302,21 @@ export default function DeviceWorkspace({
                         ))}
                       </div>
                     ) : (
-                      "尚未上报"
+                      t("notReported")
                     ),
                   },
                   {
                     key: "public",
-                    label: "公网地址",
+                    label: t("publicAddress"),
                     children: (
                       <div className="network-address-value">
-                        <span className="mono">{publicIp || "未获取"}</span>
+                        <span className="mono">{publicIp || t("notFetched")}</span>
                         {publicIp && (
                           <div className="secondary-text">
                             {info?.public_ip ||
                             device.public_ip_source === "ipinfo.io"
-                              ? "ipinfo.io · 设备出口"
-                              : "设备连接来源"}
+                              ? "ipinfo.io · " + t("publicAddress")
+                              : t("connectionSourceAddress")}
                           </div>
                         )}
                       </div>
@@ -322,21 +324,21 @@ export default function DeviceWorkspace({
                   },
                   {
                     key: "source",
-                    label: "连接来源地址",
+                    label: t("connectionSource"),
                     children: (
                       <span className="mono">{device.source_ip || "—"}</span>
                     ),
                   },
                   {
                     key: "reported",
-                    label: "地址更新时间",
+                    label: t("addressUpdated"),
                     children: device.reported_at
                       ? date(device.reported_at)
-                      : "尚未上报",
+                      : t("notReported"),
                   },
                   {
                     key: "seen",
-                    label: "最近通信",
+                    label: t("recentCommunication"),
                     children: <Typography.Text>
                       {dateOnly(device.last_seen)}
                     </Typography.Text>,

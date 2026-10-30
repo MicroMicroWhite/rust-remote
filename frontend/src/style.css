@@ -506,7 +506,16 @@ h2 {
   min-width: 0;
 }
 .filter-field.short {
-  width: 220px;
+  width: 260px;
+  flex: 0 0 260px;
+}
+.filter-field.device-filter-system {
+  width: 260px;
+  flex-basis: 260px;
+}
+.filter-field.device-filter-version {
+  width: 320px;
+  flex-basis: 320px;
 }
 .filter-field .ant-select {
   flex: 1;
@@ -1408,6 +1417,7 @@ h2 {
   .filter-field,
   .filter-field.short {
     width: 100%;
+    flex-basis: auto;
   }
   .filter-field > span:first-child {
     width: 56px;

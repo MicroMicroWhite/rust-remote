@@ -30,6 +30,7 @@ import { bytes, date } from "./format";
 import { displayPath } from "./path";
 import { EmptyState, pagination } from "./ui";
 import { usePageLoading } from "./PageTransition";
+import { useTranslation } from "react-i18next";
 import type { Entry, Listing } from "./types";
 
 type Editor = { path: string; content: string; original: string };
@@ -40,6 +41,7 @@ export default function FilesView({
   id: string;
   initialPath: string;
 }) {
+  const { t } = useTranslation();
   const { modal, message } = App.useApp();
   const [listing, setListing] = useState<Listing | null>(null);
   const [path, setPath] = useState(initialPath);
@@ -88,7 +90,7 @@ export default function FilesView({
     setError("");
     try {
       await command(id, action, params);
-      void message.success("操作成功");
+      void message.success(t("operationSuccess"));
       await load(listing?.path || path);
     } catch (e) {
       setError((e as Error).message);
@@ -137,11 +139,11 @@ export default function FilesView({
   function closeEditor() {
     if (editor?.content !== editor?.original)
       modal.confirm({
-        title: "放弃未保存的修改？",
-        content: "关闭后，本次编辑的内容将不会保存。",
-        okText: "放弃修改",
+        title: t("discardChanges"),
+        content: t("discardChangesText"),
+        okText: t("discardChangesButton"),
         okButtonProps: { danger: true },
-        cancelText: "继续编辑",
+        cancelText: t("continueEditing"),
         onOk: () => setEditor(null),
       });
     else setEditor(null);
@@ -149,7 +151,7 @@ export default function FilesView({
   async function save() {
     if (!editor) return;
     if (new TextEncoder().encode(editor.content).length > 256 * 1024) {
-      void message.error("文本内容不能超过 256 KiB");
+      void message.error(t("textTooLarge"));
       return;
     }
     try {
@@ -161,7 +163,7 @@ export default function FilesView({
     if (input.current) input.current.value = "";
     if (!file || !listing) return;
     if (file.size > 8 * 1024 * 1024) {
-      setError("上传文件不能超过 8 MiB");
+      setError(t("uploadTooLarge"));
       return;
     }
     const data = new FormData();
@@ -173,7 +175,7 @@ export default function FilesView({
         `/devices/${encodeURIComponent(id)}/upload?path=${encodeURIComponent(join(file.name))}`,
         { method: "POST", body: data },
       );
-      void message.success("文件上传成功");
+      void message.success(t("uploadSuccess"));
       await load(listing.path);
     } catch (e) {
       setError((e as Error).message);
@@ -183,7 +185,7 @@ export default function FilesView({
   }
   const columns: ColumnsType<Entry> = [
     {
-      title: "名称",
+      title: t("fileName"),
       key: "name",
       width: 340,
       sorter: (a, b) => a.name.localeCompare(b.name),
@@ -208,26 +210,26 @@ export default function FilesView({
               <span className="file-label">{entry.name}</span>
             )}
           </Tooltip>
-          {entry.is_symlink && <Tag>链接</Tag>}
+          {entry.is_symlink && <Tag>{t("symlink")}</Tag>}
         </div>
       ),
     },
     {
-      title: "大小",
+      title: t("size"),
       dataIndex: "size",
       width: 120,
       sorter: (a, b) => a.size - b.size,
       render: (value, entry) => (entry.is_dir ? "—" : bytes(value)),
     },
     {
-      title: "修改时间",
+      title: t("modified"),
       dataIndex: "modified",
       width: 190,
       sorter: (a, b) => (a.modified || 0) - (b.modified || 0),
       render: (value) => (value ? date(value) : "—"),
     },
     {
-      title: "操作",
+      title: t("fileActions"),
       width: 200,
       fixed: "right",
       render: (_, entry) => (
@@ -243,7 +245,7 @@ export default function FilesView({
                 )
               }
             >
-              下载
+              {t("download")}
             </Button>
           )}
           {!entry.is_dir && !entry.is_symlink && entry.size <= 256 * 1024 && (
@@ -253,7 +255,7 @@ export default function FilesView({
               disabled={busy}
               onClick={() => void edit(entry)}
             >
-              编辑
+              {t("edit")}
             </Button>
           )}
           <Dropdown
@@ -262,31 +264,31 @@ export default function FilesView({
               items: [
                 {
                   key: "rename",
-                  label: "重命名",
+                  label: t("rename"),
                   icon: <Pencil size={14} />,
                   disabled: entry.is_symlink,
                   onClick: () => openNameDialog("rename", entry),
                 },
                 {
                   key: "delete",
-                  label: "删除",
+                  label: t("delete"),
                   icon: <Trash2 size={14} />,
                   danger: true,
                   disabled: entry.is_symlink,
                   onClick: () =>
                     modal.confirm({
-                      title: `删除${entry.is_dir ? "目录" : "文件"}？`,
+                      title: t("deleteEntryConfirm", { type: entry.is_dir ? t("directory") : t("fileName") }),
                       content: (
                         <div>
                           <p className="break-word">{entry.name}</p>
                           <p className="secondary-text">
-                            此操作不可撤销。目录必须为空。
+                            {t("deleteEntryNote")}
                           </p>
                         </div>
                       ),
-                      okText: "删除",
+                      okText: t("delete"),
                       okButtonProps: { danger: true },
-                      cancelText: "取消",
+                      cancelText: t("cancel"),
                       onOk: () => mutate("fs.delete", { path: entry.path }),
                     }),
                 },
@@ -297,7 +299,7 @@ export default function FilesView({
               type="text"
               size="small"
               disabled={busy}
-              aria-label={`更多操作 ${entry.name}`}
+              aria-label={t("moreActions", { name: entry.name })}
               icon={<MoreHorizontal size={16} />}
             />
           </Dropdown>
@@ -309,9 +311,9 @@ export default function FilesView({
     <section className="table-panel files-panel">
       <div className="table-toolbar">
         <div className="toolbar-title">
-          文件管理
+          {t("fileManagement")}
           <span className="secondary-text">
-            {listing?.entries.length ?? 0} 个项目
+            {t("itemCount", { count: listing?.entries.length ?? 0 })}
           </span>
         </div>
         <Space wrap>
@@ -320,7 +322,7 @@ export default function FilesView({
             disabled={busy || !listing}
             onClick={() => openNameDialog("mkdir")}
           >
-            新建文件夹
+            {t("newFolder")}
           </Button>
           <Button
             type="primary"
@@ -328,7 +330,7 @@ export default function FilesView({
             disabled={busy || !listing}
             onClick={() => input.current?.click()}
           >
-            上传文件
+            {t("upload")}
           </Button>
           <input
             ref={input}
@@ -346,28 +348,28 @@ export default function FilesView({
         }}
       >
         <Space.Compact block>
-          <Tooltip title="上一级目录">
+          <Tooltip title={t("parentDirectory")}>
             <Button
               icon={<ArrowUp size={15} />}
-              aria-label="上一级目录"
+              aria-label={t("parentDirectory")}
               disabled={busy || !listing?.parent}
               onClick={() => listing?.parent && void load(listing.parent)}
             />
           </Tooltip>
           <Input
-            aria-label="目录路径"
+            aria-label={t("directoryPath")}
             className="mono"
             value={displayPath(path)}
             onChange={(e) => setPath(e.target.value)}
           />
           <Button htmlType="submit" loading={busy}>
-            打开
+            {t("open")}
           </Button>
         </Space.Compact>
-        <Tooltip title="刷新目录">
+        <Tooltip title={t("refreshDirectory")}>
           <Button
             icon={<RefreshCw size={15} />}
-            aria-label="刷新目录"
+            aria-label={t("refreshDirectory")}
             disabled={busy}
             onClick={() => void load(listing?.path || path)}
           />
@@ -394,17 +396,17 @@ export default function FilesView({
         locale={{
           emptyText: (
             <EmptyState
-              description={listing ? "此目录为空" : "输入目录路径后打开"}
+              description={listing ? t("emptyDirectory") : t("enterPath")}
             />
           ),
         }}
       />
       <div className="panel-note">
-        <span>单文件最大 8 MiB，上传不覆盖同名文件。</span>
-        {listing?.truncated && <Tag color="warning">仅显示前 5000 项</Tag>}
+        <span>{t("fileNote")}</span>
+        {listing?.truncated && <Tag color="warning">{t("truncatedEntries")}</Tag>}
       </div>
       <Modal
-        title={dialog?.type === "mkdir" ? "新建文件夹" : "重命名"}
+        title={dialog?.type === "mkdir" ? t("newFolder") : t("rename")}
         open={!!dialog}
         onCancel={() => {
           if (!busy) setDialog(null);
@@ -412,8 +414,8 @@ export default function FilesView({
         onOk={() => form.submit()}
         confirmLoading={busy}
         cancelButtonProps={{ disabled: busy }}
-        okText="确定"
-        cancelText="取消"
+        okText={t("confirm")}
+        cancelText={t("cancel")}
         destroyOnHidden
       >
         <Form
@@ -425,16 +427,16 @@ export default function FilesView({
         >
           <Form.Item
             name="name"
-            label={dialog?.type === "mkdir" ? "文件夹名称" : "新名称"}
+            label={dialog?.type === "mkdir" ? t("folderName") : t("newName")}
             rules={[
-              { required: true, whitespace: true, message: "请输入名称" },
+              { required: true, whitespace: true, message: t("enterName") },
               {
                 validator: (_, value) =>
                   !value ||
                   (!/[\\/\0]/.test(value) && value !== "." && value !== "..")
                     ? Promise.resolve()
                     : Promise.reject(
-                        new Error("名称不能包含路径分隔符，也不能为 . 或 .."),
+                        new Error(t("invalidName")),
                       ),
               },
             ]}
@@ -451,14 +453,14 @@ export default function FilesView({
         </Form>
       </Modal>
       <Modal
-        title="编辑文本文件"
+        title={t("editTextFile")}
         open={!!editor}
         width={900}
         onCancel={closeEditor}
         onOk={() => void save()}
         confirmLoading={busy}
-        okText="保存更改"
-        cancelText="关闭"
+        okText={t("saveChanges")}
+        cancelText={t("close")}
         cancelButtonProps={{ disabled: busy }}
         okButtonProps={{
           disabled: !editor || editor.content === editor.original,
@@ -472,7 +474,7 @@ export default function FilesView({
             </Typography.Paragraph>
             <Input.TextArea
               className="file-editor"
-              aria-label="文件内容"
+              aria-label={t("fileContentAria")}
               spellCheck={false}
               value={editor.content}
               onChange={(e) =>
@@ -481,7 +483,7 @@ export default function FilesView({
               autoSize={{ minRows: 14, maxRows: 24 }}
             />
             <div className="panel-note">
-              UTF-8 文本 · 最大 256 KiB · 保存会替换原文件内容
+              {t("textFileNote")}
             </div>
           </>
         )}

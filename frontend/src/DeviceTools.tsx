@@ -12,6 +12,7 @@ import { command } from "./api";
 import { bytes } from "./format";
 import { EmptyState, pagination } from "./ui";
 import { usePageLoading } from "./PageTransition";
+import { useTranslation } from "react-i18next";
 import type { EnvironmentVariable, Output, Process } from "./types";
 import TerminalView from "./TerminalView";
 import { parsePorts, type PortConnection } from "./ports";
@@ -19,6 +20,7 @@ import { parsePorts, type PortConnection } from "./ports";
 type Props = { id: string; setError: (error: string) => void };
 export { default as ScreenView } from "./ScreenView";
 export function ProcessesView({ id, setError, killSupported }: Props & { killSupported: boolean }) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<Process[]>([]);
   const [busy, setBusy] = useState(true);
   usePageLoading(busy);
@@ -68,50 +70,50 @@ export function ProcessesView({ id, setError, killSupported }: Props & { killSup
       render: (value) => <span className="mono">{value}</span>,
     },
     {
-      title: "进程名称",
+      title: t("portProcess"),
       dataIndex: "name",
       sorter: (a, b) => a.name.localeCompare(b.name),
       ellipsis: true,
     },
     {
-      title: "内存占用",
+      title: t("memory"),
       dataIndex: "memory",
       width: 180,
       sorter: (a, b) => a.memory - b.memory,
       render: bytes,
     },
     {
-      title: "状态",
+      title: t("status"),
       dataIndex: "status",
       width: 180,
       render: (value) => <Tag>{value}</Tag>,
     },
     {
-      title: "操作", key: "actions", width: 120,
+      title: t("actions"), key: "actions", width: 120,
       render: (_, process) => <Button size="small" danger type="link"
         disabled={!killSupported || process.can_kill === false || process.start_time === undefined}
-        onClick={() => { setSelected(process); setEndError(""); }}>结束进程</Button>,
+        onClick={() => { setSelected(process); setEndError(""); }}>{t("endProcess")}</Button>,
     },
   ];
   return (
     <section className="table-panel">
-      <Modal title="结束进程" open={!!selected} okText="结束进程" cancelText="取消"
+      <Modal title={t("endProcess")} open={!!selected} okText={t("endProcess")} cancelText={t("cancel")}
         okButtonProps={{ danger: true }} confirmLoading={ending} cancelButtonProps={{ disabled: ending }}
         closable={!ending} maskClosable={!ending} keyboard={!ending}
         onCancel={() => { if (!ending) setSelected(null); }} onOk={() => void terminate()}>
-        <p className="process-confirm">确定结束 <strong>{selected?.name}</strong>（PID {selected?.pid}）？</p>
-        <p className="secondary-text">进程将立即终止，未保存的数据可能丢失。请确认这是需要结束的进程。</p>
-        {endError && <Alert className="form-alert" type="error" showIcon title="未能结束进程" description={endError} />}
+        <p className="process-confirm">{t("endProcessConfirm", { name: selected?.name, pid: selected?.pid })}</p>
+        <p className="secondary-text">{t("endProcessNote")}</p>
+        {endError && <Alert className="form-alert" type="error" showIcon title={t("cannotEndProcess")} description={endError} />}
       </Modal>
       <div className="table-toolbar">
         <div className="toolbar-title">
-          进程列表<span className="secondary-text">{items.length} 个进程</span>
+          {t("processList")}<span className="secondary-text">{t("processCount", { count: items.length })}</span>
         </div>
         <div className="toolbar-actions">
           <Input
-            aria-label="搜索进程"
+            aria-label={t("searchProcesses")}
             prefix={<Search size={14} />}
-            placeholder="搜索名称或 PID"
+            placeholder={t("processPlaceholder")}
             allowClear
             value={query}
             onChange={(e) => {
@@ -124,7 +126,7 @@ export function ProcessesView({ id, setError, killSupported }: Props & { killSup
             loading={busy}
             onClick={() => void refresh()}
           >
-            刷新
+            {t("refresh")}
           </Button>
         </div>
       </div>
@@ -138,14 +140,15 @@ export function ProcessesView({ id, setError, killSupported }: Props & { killSup
         size="small"
         scroll={{ x: 800 }}
         pagination={{ ...pagination, current: page, onChange: setPage }}
-        locale={{ emptyText: <EmptyState description="没有匹配的进程" /> }}
+        locale={{ emptyText: <EmptyState description={t("noMatchingProcesses")} /> }}
       />
-      {truncated && <div className="panel-note">仅显示前 10000 个进程。</div>}
-      {!killSupported && <div className="panel-note">升级被控端后可使用结束进程功能。</div>}
+      {truncated && <div className="panel-note">{t("processLimit")}</div>}
+      {!killSupported && <div className="panel-note">{t("killUpgrade")}</div>}
     </section>
   );
 }
 export function EnvironmentView({ id, setError }: Props) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<EnvironmentVariable[]>([]);
   const [busy, setBusy] = useState(true);
   usePageLoading(busy);
@@ -176,14 +179,14 @@ export function EnvironmentView({ id, setError }: Props) {
   );
   const columns: ColumnsType<EnvironmentVariable> = [
     {
-      title: "变量名",
+      title: t("variableName"),
       dataIndex: "name",
       width: 280,
       sorter: (a, b) => a.name.localeCompare(b.name),
       render: (value) => <span className="mono" title={value}>{value}</span>,
     },
     {
-      title: "变量值",
+      title: t("variableValue"),
       dataIndex: "value",
       ellipsis: true,
       render: (value) => <span className="mono" title={value}>{value || "—"}</span>,
@@ -193,13 +196,13 @@ export function EnvironmentView({ id, setError }: Props) {
     <section className="table-panel">
       <div className="table-toolbar">
         <div className="toolbar-title">
-          环境变量<span className="secondary-text">{filtered.length} / {items.length} 个变量</span>
+          {t("environmentVariables")}<span className="secondary-text">{t("environmentCount", { filtered: filtered.length, total: items.length })}</span>
         </div>
         <div className="toolbar-actions">
           <Input
-            aria-label="搜索环境变量"
+            aria-label={t("searchEnvironment")}
             prefix={<Search size={14} />}
-            placeholder="搜索变量名或值"
+            placeholder={t("environmentPlaceholder")}
             allowClear
             value={query}
             onChange={(e) => {
@@ -208,7 +211,7 @@ export function EnvironmentView({ id, setError }: Props) {
             }}
           />
           <Button icon={<RefreshCw size={14} />} loading={busy} onClick={() => void refresh()}>
-            刷新
+            {t("refresh")}
           </Button>
         </div>
       </div>
@@ -220,16 +223,17 @@ export function EnvironmentView({ id, setError }: Props) {
         size="small"
         scroll={{ x: 700 }}
         pagination={{ ...pagination, current: page, onChange: setPage }}
-        locale={{ emptyText: <EmptyState description={query ? "没有匹配的环境变量" : "未发现环境变量"} /> }}
+        locale={{ emptyText: <EmptyState description={query ? t("noMatchingEnvironment") : t("noEnvironment")} /> }}
       />
       <div className="panel-note">
-        显示被控端当前进程的环境变量。
-        {truncated ? "环境变量数量超过上限，仅显示前 2000 个。" : ""}
+        {t("environmentNote")}
+        {truncated ? t("environmentLimit") : ""}
       </div>
     </section>
   );
 }
 export function PortsView({ id, setError }: Props) {
+  const { t } = useTranslation();
   const [items, setItems] = useState<PortConnection[]>([]);
   const [busy, setBusy] = useState(true);
   usePageLoading(busy);
@@ -241,12 +245,12 @@ export function PortsView({ id, setError }: Props) {
     setBusy(true);
     try {
       const output = await command<Output>(id, "ports.list");
-      if (output.exit_code !== 0) throw new Error(output.stderr || "未能读取端口信息，请检查被控端权限及网络工具。");
+      if (output.exit_code !== 0) throw new Error(output.stderr || t("readPortsFailed"));
       const parsed = parsePorts(output.stdout);
       setItems(parsed.items);
       setPage(1);
-      setNote([output.truncated ? "输出已截断，部分连接可能未显示。" : "",
-        parsed.unparsed ? `${parsed.unparsed} 行连接无法识别。` : "", output.stderr].filter(Boolean).join(" "));
+      setNote([output.truncated ? t("outputTruncated") : "",
+        parsed.unparsed ? t("unparsedConnections", { count: parsed.unparsed }) : "", output.stderr].filter(Boolean).join(" "));
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }, [id, setError]);
@@ -254,38 +258,39 @@ export function PortsView({ id, setError }: Props) {
   const filtered = items.filter((item) => (!protocol || item.protocol.startsWith(protocol)) &&
     `${item.local} ${item.remote} ${item.state} ${item.pid ?? ""} ${item.process}`.toLowerCase().includes(query.trim().toLowerCase()));
   const columns: ColumnsType<PortConnection> = [
-    { title: "协议", dataIndex: "protocol", width: 90, render: (value) => <Tag>{value}</Tag> },
-    { title: "本地地址 / 端口", dataIndex: "local", width: 240, sorter: (a, b) => a.local.localeCompare(b.local),
+    { title: t("protocol"), dataIndex: "protocol", width: 90, render: (value) => <Tag>{value}</Tag> },
+    { title: t("localAddressPort"), dataIndex: "local", width: 240, sorter: (a, b) => a.local.localeCompare(b.local),
       render: (value) => <span className="mono">{value}</span> },
-    { title: "远程地址 / 端口", dataIndex: "remote", width: 240, sorter: (a, b) => a.remote.localeCompare(b.remote),
+    { title: t("remoteAddressPort"), dataIndex: "remote", width: 240, sorter: (a, b) => a.remote.localeCompare(b.remote),
       render: (value) => <span className="mono">{value}</span> },
-    { title: "状态", dataIndex: "state", width: 155, sorter: (a, b) => a.state.localeCompare(b.state),
-      render: (value) => <Tag color={/LISTEN/.test(value) ? "blue" : /ESTAB|已建立/.test(value) ? "success" : "default"}>{value}</Tag> },
+    { title: t("status"), dataIndex: "state", width: 155, sorter: (a, b) => a.state.localeCompare(b.state),
+      render: (value) => <Tag color={/LISTEN/.test(value) ? "blue" : /ESTAB|\u5df2\u5efa\u7acb/.test(value) ? "success" : "default"}>{value}</Tag> },
     { title: "PID", dataIndex: "pid", width: 100, sorter: (a, b) => (a.pid ?? -1) - (b.pid ?? -1),
       render: (value) => <span className="mono">{value ?? "—"}</span> },
-    { title: "进程名称", dataIndex: "process", width: 160, ellipsis: true, render: (value) => value || "—" },
+    { title: t("portProcess"), dataIndex: "process", width: 160, ellipsis: true, render: (value) => value || "—" },
   ];
   return <section className="table-panel">
     <div className="table-toolbar">
-      <div className="toolbar-title">端口与网络连接<span className="secondary-text">{filtered.length} / {items.length} 条连接</span></div>
+      <div className="toolbar-title">{t("portConnectionsTitle")}<span className="secondary-text">{t("connectionCount", { filtered: filtered.length, total: items.length })}</span></div>
       <div className="toolbar-actions">
-        <Input aria-label="搜索端口连接" prefix={<Search size={14} />} placeholder="地址、端口、PID 或进程" allowClear
+        <Input aria-label={t("searchPorts")} prefix={<Search size={14} />} placeholder={t("portPlaceholder")} allowClear
           value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
-        <Select aria-label="协议筛选" className="port-protocol-filter" value={protocol}
+        <Select aria-label={t("protocolFilter")} className="port-protocol-filter" value={protocol}
           onChange={(value) => { setProtocol(value); setPage(1); }}
-          options={[{ value: "", label: "全部协议" }, { value: "TCP", label: "TCP" }, { value: "UDP", label: "UDP" }]} />
-        <Button icon={<RefreshCw size={14} />} loading={busy} onClick={() => void refresh()}>刷新</Button>
+          options={[{ value: "", label: t("allProtocols") }, { value: "TCP", label: "TCP" }, { value: "UDP", label: "UDP" }]} />
+        <Button icon={<RefreshCw size={14} />} loading={busy} onClick={() => void refresh()}>{t("refresh")}</Button>
       </div>
     </div>
     <Table<PortConnection> rowKey="key" columns={columns} dataSource={filtered} loading={busy} size="small"
       scroll={{ x: 1000 }} pagination={{ ...pagination, current: page, onChange: setPage }}
-      locale={{ emptyText: <EmptyState description={query || protocol ? "没有匹配的连接" : "未发现网络连接"} /> }} />
-    <div className="panel-note">进程归属信息取决于被控端账户权限。{note}</div>
+      locale={{ emptyText: <EmptyState description={query || protocol ? t("noMatchingConnections") : t("noNetworkConnections")} /> }} />
+    <div className="panel-note">{t("portNote")}{note}</div>
   </section>;
 }
 export function ShellView(props: Props & { disabled: boolean; interactive: boolean }) {
+  const { t } = useTranslation();
   return props.interactive ? <TerminalView id={props.id} disabled={props.disabled} /> : <>
-    <div className="panel-note">此设备使用单次命令模式，升级被控端后可使用连续交互式终端。</div>
+    <div className="panel-note">{t("terminalSingleCommandNote")}</div>
     <LegacyShellView {...props} />
   </>;
 }
@@ -294,6 +299,7 @@ function LegacyShellView({
   disabled,
   setError,
 }: Props & { disabled: boolean }) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<{ command: string; output: Output }[]>(
@@ -326,21 +332,21 @@ function LegacyShellView({
       <div className="table-toolbar">
         <div className="toolbar-title">
           <Terminal size={17} />
-          终端命令<Tag>超时 30 秒</Tag>
+          {t("terminalCommand")}<Tag>{t("timeoutSeconds")}</Tag>
         </div>
         <Button
           disabled={busy || !history.length}
           onClick={() => setHistory([])}
         >
-          清空显示
+          {t("clearDisplay")}
         </Button>
       </div>
-      <div className="shell-output" aria-label="命令执行结果" role="log">
+      <div className="shell-output" aria-label={t("commandResult")} role="log">
         {!history.length && (
           <div className="terminal-placeholder">
             <Terminal size={24} />
-            <p>{disabled ? "此设备的终端命令功能不可用。" : "等待执行命令"}</p>
-            <span>每条命令独立执行，工作目录不会跨命令保存。</span>
+            <p>{disabled ? t("terminalUnavailable") : t("waitingForCommand")}</p>
+            <span>{t("commandWorkingDirNote")}</span>
           </div>
         )}
         {history.map((item, index) => (
@@ -356,8 +362,8 @@ function LegacyShellView({
             <div
               className={`exit-code ${item.output.exit_code !== 0 ? "failed" : ""}`}
             >
-              退出码 {item.output.exit_code ?? "—"}
-              {item.output.truncated && " · 输出已截断"}
+              {t("exitCode")} {item.output.exit_code ?? "—"}
+              {item.output.truncated && ` · ${t("outputTruncatedInline")}`}
             </div>
           </div>
         ))}
@@ -365,13 +371,13 @@ function LegacyShellView({
       </div>
       <form className="shell-form" onSubmit={run}>
         <Input
-          aria-label="Shell 命令"
+          aria-label={t("shellCommand")}
           prefix={<Terminal size={15} />}
           className="mono"
           value={text}
           disabled={disabled || busy}
           onChange={(e) => setText(e.target.value)}
-          placeholder={disabled ? "终端命令不可用" : "输入命令，按 Enter 执行"}
+          placeholder={disabled ? t("terminalCommandUnavailable") : t("enterCommand")}
           autoComplete="off"
         />
         <Button
@@ -380,12 +386,12 @@ function LegacyShellView({
           loading={busy}
           disabled={disabled || !text.trim()}
         >
-          执行命令
+          {t("executeCommand")}
         </Button>
       </form>
       <div className="panel-note">
         <Typography.Text type="secondary">
-          以客户端当前账户权限执行。仅保留本页最近 20 次输出。
+          {t("shellPermissionNote")}
         </Typography.Text>
       </div>
     </section>

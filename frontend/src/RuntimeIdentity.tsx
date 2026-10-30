@@ -1,5 +1,6 @@
 import { Alert, Card, Collapse, Descriptions, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { useTranslation } from "react-i18next";
 
 type Group = {
   id: string;
@@ -21,49 +22,38 @@ export type IdentityInfo = {
   error?: string;
 };
 const levels: Record<string, string> = {
-  system: "SYSTEM 系统账户",
-  elevated: "管理员 · 已提权",
-  standard: "普通 / 受限令牌 · 未提权",
-  root: "root 用户",
-  user: "普通用户",
+  system: "runtimeSystem", elevated: "runtimeElevated", standard: "runtimeStandard", root: "runtimeRoot", user: "runtimeUser",
 };
 const integrities: Record<string, string> = {
-  untrusted: "不可信",
-  low: "低",
-  medium: "中",
-  high: "高",
-  system: "系统",
-  protected: "受保护",
+  untrusted: "integrityUntrusted", low: "integrityLow", medium: "integrityMedium", high: "integrityHigh", system: "integritySystem", protected: "integrityProtected",
 };
-const states: Record<string, string> = {
-  enabled: "已启用",
-  deny_only: "仅拒绝",
-  disabled: "未启用",
-};
-const columns: ColumnsType<Group> = [
+const states: Record<string, string> = { enabled: "enabled", deny_only: "denyOnly", disabled: "disabled" };
+function groupColumns(t: (key: string) => string): ColumnsType<Group> {
+ return [
   {
-    title: "组名称",
+    title: t("groupName"),
     dataIndex: "name",
-    render: (name) => name || "名称不可用",
+    render: (name) => name || "—",
   },
   {
-    title: "组 ID / SID",
+    title: t("groupIdSid"),
     dataIndex: "id",
     render: (id) => <span className="mono">{id}</span>,
   },
   {
-    title: "当前状态",
+    title: t("currentState"),
     width: 165,
     render: (_, group) => (
       <>
-        {group.primary && <Tag color="blue">主组</Tag>}
+        {group.primary && <Tag color="blue">{t("primaryGroup")}</Tag>}
         <Tag color={group.state === "enabled" ? "success" : "default"}>
-          {states[group.state] || group.state}
+          {states[group.state] ? t(states[group.state]) : group.state}
         </Tag>
       </>
     ),
   },
-];
+ ];
+}
 export default function RuntimeIdentity({
   info,
   platform,
@@ -71,25 +61,26 @@ export default function RuntimeIdentity({
   info?: IdentityInfo;
   platform: string;
 }) {
+  const { t } = useTranslation();
   const windows = platform === "windows";
   return (
     <Card
-      title="运行身份与权限"
+      title={t("identityPermissions")}
       className="detail-card identity-card"
-      extra={<span className="secondary-text">当前进程</span>}
+      extra={<span className="secondary-text">{t("currentProcess")}</span>}
     >
       {!info ? (
         <Alert
           type="info"
           showIcon
-          title="当前客户端未上报运行身份"
-          description="手动替换新版客户端并重新连接后，可查看运行账户和组信息。"
+          title={t("identityMissing")}
+          description={t("identityMissingHint")}
         />
       ) : info.error ? (
         <Alert
           type="warning"
           showIcon
-          title="无法读取运行身份"
+          title={t("cannotReadIdentity")}
           description={info.error}
         />
       ) : (
@@ -100,21 +91,21 @@ export default function RuntimeIdentity({
             items={[
               {
                 key: "account",
-                label: "运行账户",
-                children: info.account || "名称不可用",
+                label: t("account"),
+                children: info.account || t("unavailableName"),
               },
               {
                 key: "level",
-                label: "权限级别",
+                label: t("privilegeLevel"),
                 children: (
                   <Tag color="blue">
-                    {levels[info.privilege_level || ""] || "未获取"}
+                    {levels[info.privilege_level || ""] ? t(levels[info.privilege_level || ""]) : t("notFetchedShort")}
                   </Tag>
                 ),
               },
               {
                 key: "id",
-                label: windows ? "账户 SID" : "有效 / 实际 UID",
+                label: windows ? t("accountSid") : t("effectiveUid"),
                 children: (
                   <span className="mono">
                     {windows
@@ -125,19 +116,19 @@ export default function RuntimeIdentity({
               },
               {
                 key: "integrity",
-                label: windows ? "完整性级别" : "有效 / 实际 GID",
+                label: windows ? t("integrityLevel") : t("effectiveGid"),
                 children: windows
-                  ? integrities[info.integrity || ""] || "未获取"
+                  ? (integrities[info.integrity || ""] ? t(integrities[info.integrity || ""]) : t("notFetchedShort"))
                   : `${info.egid ?? "—"} / ${info.gid ?? "—"}`,
               },
               ...(info.effective_capabilities
                 ? [
                     {
                       key: "cap",
-                      label: "有效 capabilities",
+                      label: t("effectiveCapabilities"),
                       children: (
                         <span className="mono">
-                          {info.effective_capabilities}（十六进制）
+                          {info.effective_capabilities}{t("hexValue")}
                         </span>
                       ),
                     },
@@ -151,17 +142,17 @@ export default function RuntimeIdentity({
             items={[
               {
                 key: "groups",
-                label: `所属组（${info.groups?.length ?? 0}）`,
+                label: t("groups", { count: info.groups?.length ?? 0 }),
                 children: (
                   <>
                     <p className="secondary-text group-help">
                       {windows
-                        ? "“仅拒绝”组不授予访问权限。属于管理员组不代表当前进程已提权。"
-                        : "显示进程的有效主组和附加组，实际权限还受 capabilities、容器与文件权限限制。"}
+                        ? t("windowsGroupHint")
+                        : t("groupHint")}
                     </p>
                     <Table<Group>
                       rowKey="id"
-                      columns={columns}
+                      columns={groupColumns(t)}
                       dataSource={info.groups ?? []}
                       size="small"
                       pagination={false}

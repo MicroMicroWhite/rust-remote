@@ -56,12 +56,16 @@ export default function App() {
   );
 }
 function Session() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [session, setSession] = useState<"loading" | "guest" | "ready">(
     "loading",
   );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    document.title = `Rust Remote · ${t("consoleSubtitle")}`;
+    document.documentElement.lang = i18n.language.startsWith("en") ? "en" : "zh-CN";
+  }, [t, i18n.language]);
   useEffect(() => {
     if (!validEntrance) {
       setSession("guest");
@@ -146,7 +150,7 @@ function Session() {
           <div className="login-brand">
             <BrandMark />
             <span>
-              Rust Remote<small>设备管理控制台</small>
+              Rust Remote<small>{t("appSubtitle")}</small>
             </span>
           </div>
           <section className="login-card">
@@ -188,9 +192,9 @@ function Session() {
               {t("authorizedOnly")}
             </div>
           </section>
-          <div className="login-copyright">Rust Remote · 远程设备管理</div>
+          <div className="login-copyright">Rust Remote · {t("remoteManagement")}</div>
           </main>
-          <aside className="login-visual" aria-label="远程设备管理介绍">
+          <aside className="login-visual" aria-label={t("remoteManagementIntro")}>
             <div className="login-visual-top"><span>{t("remoteManagement")}</span><span className="login-visual-chip"><i /> {t("connected")}</span></div>
             <div className="login-orbit"><div className="login-orbit-ring login-orbit-ring-one" /><div className="login-orbit-ring login-orbit-ring-two" /><BrandMark /><span className="login-orbit-dot login-orbit-dot-one" /><span className="login-orbit-dot login-orbit-dot-two" /></div>
             <div className="login-visual-copy"><span>{t("workspace")}</span><h2>{t("allHere")}</h2><p>{t("workspaceHint")}</p><div className="login-visual-stats"><div><strong>24/7</strong><span>{t("alwaysOn")}</span></div><div><strong>WSS</strong><span>{t("encrypted")}</span></div><div><strong>LIVE</strong><span>{t("live")}</span></div></div></div>

@@ -25,6 +25,7 @@ import { upgradeState } from "./upgrade";
 import { dateTime } from "./format";
 import { navigate } from "./navigation";
 import { DeviceStatus, EmptyState, PageHeader, pagination } from "./ui";
+import { useTranslation } from "react-i18next";
 
 export default function DeviceList({
   devices: reportedDevices,
@@ -41,6 +42,7 @@ export default function DeviceList({
   updated: string;
   syncFailed: boolean;
 }) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const devices = useDeviceSystems(reportedDevices);
   const [status, setStatus] = useState("online");
@@ -76,7 +78,7 @@ export default function DeviceList({
     navigate(`/devices/${encodeURIComponent(device.id)}/overview`);
   const columns: ColumnsType<Device> = [
     {
-      title: "设备名称",
+      title: t("deviceName"),
       key: "name",
       className: "device-detail-column",
       width: 260,
@@ -93,7 +95,7 @@ export default function DeviceList({
             <Typography.Text
               className="secondary-text device-id"
               ellipsis={{ tooltip: d.id }}
-              copyable={{ text: d.id, tooltips: ["复制设备 ID", "已复制"] }}
+              copyable={{ text: d.id, tooltips: [t("copyDeviceId"), t("copied")] }}
             >
               {d.id}
             </Typography.Text>
@@ -102,20 +104,20 @@ export default function DeviceList({
       ),
     },
     {
-      title: "状态",
+      title: t("status"),
       key: "online",
       width: 100,
       render: (_, d) => <DeviceStatus online={d.online} />,
     },
     {
-      title: "操作系统",
+      title: t("operatingSystem"),
       dataIndex: "platform",
       className: "device-detail-column",
       width: 260,
       render: (_, d) => <OperatingSystem device={d} />,
     },
     {
-      title: "内网 / 来源地址",
+      title: t("address"),
       width: 175,
       render: (_, d) => (
         <span className="mono">
@@ -126,14 +128,14 @@ export default function DeviceList({
       ),
     },
     {
-      title: "客户端版本",
+      title: t("clientVersion"),
       dataIndex: "version",
       className: "device-version-column",
       width: 170,
       render: (value: string, d) => {
         const state = upgradeState(d);
         const version = value ? (/^v/i.test(value) ? value : `v${value}`) : "—";
-        const needsUpgrade = state.available || state.label === "需手动更新";
+        const needsUpgrade = state.available || state.manualUpdate;
         return (
           <span className="device-version-number mono"
             style={needsUpgrade ? { color: token.colorWarningText } : undefined}
@@ -145,7 +147,7 @@ export default function DeviceList({
       },
     },
     {
-      title: "最近通信",
+      title: t("lastCommunication"),
       dataIndex: "last_seen",
       className: "device-detail-column",
       width: 190,
@@ -155,13 +157,13 @@ export default function DeviceList({
       ),
     },
     {
-      title: "操作",
+      title: t("actions"),
       width: 220,
       fixed: screens.md ? "right" : undefined,
       render: (_, d) => (
         <div className="device-row-actions">
           <Button type="link" onClick={() => open(d)}>
-            {d.online ? "管理设备" : "查看详情"}
+            {d.online ? t("manageDevice") : t("viewDetails")}
           </Button>
           <DeviceUpgrade device={d} compact />
         </div>
@@ -171,34 +173,34 @@ export default function DeviceList({
   return (
     <>
       <PageHeader
-        title="设备管理"
-        description="集中查看设备状态，进入设备详情进行管理。"
+        title={t("deviceManagement")}
+        description={t("deviceManagementHint")}
         extra={
           <Button
             icon={<RefreshCw size={15} />}
             loading={refreshing}
             onClick={refresh}
           >
-            刷新
+            {t("refresh")}
           </Button>
         }
       />
       <div className="summary-strip">
         {[
           {
-            label: "设备总数",
+            label: t("deviceCount"),
             value: devices.length,
             icon: Monitor,
             className: "",
           },
           {
-            label: "当前在线",
+            label: t("currentOnline"),
             value: online,
             icon: Activity,
             className: "success",
           },
           {
-            label: "当前离线",
+            label: t("currentOffline"),
             value: devices.length - online,
             icon: Circle,
             className: "muted",
@@ -212,7 +214,7 @@ export default function DeviceList({
               <span className="secondary-text">{item.label}</span>
               <strong>
                 {item.value}
-                <small>台</small>
+                <small>{t("unitDevice")}</small>
               </strong>
             </div>
           </div>
@@ -220,17 +222,17 @@ export default function DeviceList({
         <div className="summary-note">
           <span className={`sync-dot ${syncFailed ? "failed" : updated ? "connected" : ""}`} />
           <div>
-            {syncFailed ? "状态同步中断" : "每 5 秒同步状态"}<small>最近成功 {updated || "—"}</small>
+            {syncFailed ? t("syncInterrupted") : t("syncEveryFiveSeconds")}<small>{t("lastSuccessful", { time: updated || "—" })}</small>
           </div>
         </div>
       </div>
-      <section className="filter-panel" aria-label="设备筛选">
+      <section className="filter-panel" aria-label={t("deviceFilter")}>
         <label className="filter-field">
-          <span>设备搜索</span>
+          <span>{t("deviceSearch")}</span>
           <Input
-            aria-label="搜索设备"
+            aria-label={t("searchDeviceAria")}
             prefix={<Search size={15} />}
-            placeholder="名称、ID、IP、系统或版本"
+            placeholder={t("searchDevicePlaceholder")}
             allowClear
             value={query}
             onChange={(e) => {
@@ -239,45 +241,45 @@ export default function DeviceList({
             }}
           />
         </label>
-        <label className="filter-field short">
-          <span>操作系统</span>
+        <label className="filter-field short device-filter-system">
+          <span>{t("operatingSystem")}</span>
           <Select
-            aria-label="操作系统筛选"
+            aria-label={t("operatingSystem")}
             value={platform}
             onChange={(value) => {
               setPlatform(value);
               setPage(1);
             }}
             options={[
-              { value: "", label: "全部系统" },
+              { value: "", label: t("allSystems") },
               { value: "windows", label: "Windows" },
               { value: "linux", label: "Linux" },
             ]}
           />
         </label>
-        <label className="filter-field short">
-          <span>程序版本</span>
+        <label className="filter-field short device-filter-version">
+          <span>{t("versionFilter")}</span>
           <Select
-            aria-label="程序版本筛选"
+            aria-label={t("versionFilter")}
             value={versionFilter}
             onChange={(value) => { setVersionFilter(value); setPage(1); }}
             options={[
-              { value: "", label: "全部版本" },
-              { value: "available", label: "可在线升级" },
-              { value: "active", label: "升级进行中" },
-              { value: "attention", label: "升级需关注" },
+              { value: "", label: t("allVersions") },
+              { value: "available", label: t("onlineUpgrade") },
+              { value: "active", label: t("upgradeInProgress") },
+              { value: "attention", label: t("upgradeNeedsAttention") },
             ]}
           />
         </label>
         <Button disabled={!hasFilters} onClick={resetFilters}>
-          重置
+          {t("reset")}
         </Button>
       </section>
       <div className="device-list-meta" aria-live="polite">
-        <span>{hasFilters ? `筛选结果 ${filtered.length} / ${totalInTab} 台` : `${status === "online" ? "在线" : "离线"}设备 ${totalInTab} 台`}</span>
-        <span className="table-scroll-hint">左右滑动查看完整信息</span>
+        <span>{hasFilters ? t("filteredResults", { filtered: filtered.length, total: totalInTab }) : `${status === "online" ? t("onlineDevices") : t("offlineDevices")} ${totalInTab} ${t("unitDevice")}`}</span>
+        <span className="table-scroll-hint">{t("scrollForMore")}</span>
         <span className={syncFailed ? "sync-error" : ""}>
-          {syncFailed ? "同步中断，正在自动重试" : `最近同步 ${updated || "—"}`}
+          {syncFailed ? t("retryingSync") : t("recentlySynced", { time: updated || "—" })}
         </span>
       </div>
       <section className="table-panel">
@@ -293,7 +295,7 @@ export default function DeviceList({
                 key: "online",
                 label: (
                   <>
-                    在线设备 <span className="tab-count">{online}</span>
+                    {t("onlineDevices")} <span className="tab-count">{online}</span>
                   </>
                 ),
               },
@@ -301,7 +303,7 @@ export default function DeviceList({
                 key: "offline",
                 label: (
                   <>
-                    离线设备{" "}
+                    {t("offlineDevices")} {" "}
                     <span className="tab-count">{devices.length - online}</span>
                   </>
                 ),
@@ -323,10 +325,10 @@ export default function DeviceList({
               <EmptyState
                 description={
                   hasFilters
-                    ? <span>没有符合筛选条件的设备<Button type="link" onClick={resetFilters}>清除筛选</Button></span>
+                    ? <span>{t("noFilteredDevices")}<Button type="link" onClick={resetFilters}>{t("clearFilters")}</Button></span>
                     : status === "online"
-                      ? "暂无在线设备，客户端连接后会显示在这里"
-                      : "暂无离线设备"
+                      ? t("noOnlineDevices")
+                      : t("noOfflineDevices")
                 }
               />
             ),

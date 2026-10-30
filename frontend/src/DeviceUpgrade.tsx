@@ -3,8 +3,10 @@ import { Alert, Button, Modal, Popover, Progress } from "antd";
 import { ArrowRight, ArrowUpCircle, CircleAlert, CircleCheck, Info, LoaderCircle, RefreshCw } from "lucide-react";
 import { api } from "./api";
 import { date } from "./format";
-import { upgradeLabels, upgradeState } from "./upgrade";
+import { upgradeLabel, upgradeState } from "./upgrade";
 import type { Device, UpgradeJob } from "./types";
+import { useTranslation } from "react-i18next";
+import { translateServerText } from "./serverText";
 
 export default function DeviceUpgrade({
   device,
@@ -13,6 +15,7 @@ export default function DeviceUpgrade({
   device: Device;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitted, setSubmitted] = useState<UpgradeJob | null>(null);
@@ -26,8 +29,8 @@ export default function DeviceUpgrade({
   const canSubmit = state.available || state.reinstallAvailable;
   const target = device.upgrade?.target_version;
   const actionLabel = busy
-    ? sending ? "正在提交" : job?.status === "restarting" ? "等待重连" : `传输中 ${job?.progress ?? 0}%`
-    : state.available ? "升级程序" : reinstall ? "重新下发" : "暂无可用升级";
+    ? sending ? t("submitting") : job?.status === "restarting" ? t("waitingReconnect") : t("transferring", { progress: job?.progress ?? 0 })
+    : state.available ? t("upgradeProgram") : reinstall ? t("reinstallProgram") : t("noUpgrade");
 
   async function submit() {
     if (!canSubmit || sending) return;
@@ -61,10 +64,10 @@ export default function DeviceUpgrade({
   );
   const confirmation = (
     <Modal
-      title={reinstall ? "重新下发被控端程序" : "升级被控端程序"}
+      title={reinstall ? t("reinstallTitle") : t("upgradeTitle")}
       open={confirming}
-      okText={reinstall ? "确认重新下发" : "确认升级"}
-      cancelText="取消"
+      okText={reinstall ? t("confirmReinstall") : t("confirmUpgrade")}
+      cancelText={t("cancel")}
       confirmLoading={sending}
       okButtonProps={{ disabled: !canSubmit }}
       cancelButtonProps={{ disabled: sending }}
@@ -77,26 +80,25 @@ export default function DeviceUpgrade({
     >
       <p className="upgrade-device-name">{device.name}</p>
       <div className="upgrade-version-comparison">
-        <div><span>当前版本</span><strong className="mono">{device.version}</strong></div>
+        <div><span>{t("currentVersion")}</span><strong className="mono">{device.version}</strong></div>
         <ArrowRight size={18} aria-hidden="true" />
-        <div><span>目标版本</span><strong className="mono">{target || "—"}</strong></div>
+        <div><span>{t("targetVersion")}</span><strong className="mono">{target || "—"}</strong></div>
       </div>
       <p className="upgrade-confirm-note">
-        {reinstall ? "将重新传输并安装已发布的同版本程序，设备会短暂离线。" : "升级期间设备会短暂离线。"}
-        连接配置和设备身份会保留；连接失败时会尝试恢复旧程序。
+        {reinstall ? t("reinstallNote") : t("upgradeNote")} {t("upgradeKeepNote")}
       </p>
       {!canSubmit && !sending && <Alert showIcon type="warning" title={state.description} />}
-      {error && <Alert className="upgrade-submit-error" showIcon type="error" title="未能下发程序" description={error} />}
+      {error && <Alert className="upgrade-submit-error" showIcon type="error" title={t("deployFailed")} description={error} />}
     </Modal>
   );
   const details = (
     <div className="upgrade-popover">
       <p>{state.description}</p>
-      <p className="secondary-text">当前 {device.version} · 发布 {target || "暂无"}</p>
+      <p className="secondary-text">{t("currentVersion")} {device.version} · {t("publishedVersion")} {target || t("publishedNone")}</p>
       {state.active && <Progress percent={job?.progress ?? 0} size="small"
-        status="active" aria-label="升级包传输进度" />}
-      {job && <p className="secondary-text">最近升级：{upgradeLabels[job.status] || job.status} · {date(job.updated_at)}</p>}
-      {job?.detail && <p className="secondary-text">{job.detail}</p>}
+        status="active" aria-label={t("upgradeProgress")} />}
+      {job && <p className="secondary-text">{t("recentUpgrade", { status: upgradeLabel(job.status), time: date(job.updated_at) })}</p>}
+      {job?.detail && <p className="secondary-text">{translateServerText(job.detail, t)}</p>}
     </div>
   );
 
@@ -110,7 +112,7 @@ export default function DeviceUpgrade({
         content={details}
       >
         <Button type="text" size="small" className={`upgrade-info ${state.needsAttention ? "needs-attention" : ""}`}
-          aria-label={`查看 ${device.name} 的版本状态`} icon={<Info size={14} />} />
+          aria-label={t("versionStatus", { name: device.name })} icon={<Info size={14} />} />
       </Popover>
     </div>
   );
@@ -121,7 +123,7 @@ export default function DeviceUpgrade({
         trigger={canSubmit ? ["hover", "focus"] : ["hover", "click"]}>
         <Button size="small" type={state.available ? "primary" : "text"}
           className={`upgrade-status upgrade-status-${state.tone}`}
-          aria-label={`程序版本：${busy || canSubmit ? actionLabel : state.label}`}
+          aria-label={t("programVersion", { status: busy || canSubmit ? actionLabel : state.label })}
           aria-busy={busy}
           icon={state.active || sending ? <LoaderCircle size={13} />
             : state.available ? <ArrowUpCircle size={13} />

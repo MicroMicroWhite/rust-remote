@@ -1,5 +1,6 @@
 import { Tag } from "antd";
 import { Monitor } from "lucide-react";
+import i18n from "./i18n";
 import type { Device } from "./types";
 import windows from "./assets/os/windows.svg?raw";
 import linux from "./assets/os/linux.svg?raw";
@@ -47,14 +48,14 @@ export function operatingSystem(device: Device) {
     : platform === "linux" ? { name: "Linux", icon: linux }
     : ["macos", "darwin"].includes(platform) ? { name: "macOS", icon: apple }
     : platform === "freebsd" ? { name: "FreeBSD", icon: freebsd }
-    : { name: device.platform || "未知系统", icon: undefined };
+    : { name: device.platform || i18n.t("unknownSystem"), icon: undefined };
   const system = platform === "linux" && distribution ? distribution : generic;
   const windowsVersion = platform === "windows" && reported?.match(/\bWindows\s+(\d+(?:\.\d+)?)\b/i);
   const name = windowsVersion ? `Windows ${windowsVersion[1]}`
     : reported && !["linux", "windows", "unknown"].includes(reported.toLowerCase())
       ? reported : system.name;
   const detail = device.kernel_version ? (
-    platform === "windows" ? `Build ${device.kernel_version}` : `内核 ${device.kernel_version}`
+    platform === "windows" ? `Build ${device.kernel_version}` : `Kernel ${device.kernel_version}`
   ) : "";
   return { name, detail, icon: system.icon };
 }

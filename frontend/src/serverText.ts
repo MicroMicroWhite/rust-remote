@@ -1,0 +1,36 @@
+import i18n from "./i18n";
+
+type Translator = (key: string, options?: Record<string, unknown>) => string;
+
+const exactKeys: Record<string, string> = {
+  "\u7f16\u8bd1\u5b8c\u6210\uff0c\u5df2\u81ea\u52a8\u53d1\u5e03\u4e3a\u8be5\u7cfb\u7edf\u7684\u6700\u65b0\u7248\u672c\uff0c\u53ef\u4ee5\u4e0b\u8f7d\u6216\u524d\u5f80\u8bbe\u5907\u5217\u8868\u5347\u7ea7\u3002": "compilePublishedNotice",
+  "Docker \u6b63\u5728\u7f16\u8bd1\uff0c\u5177\u4f53\u8fdb\u5ea6\u89c1\u65e5\u5fd7\u3002": "dockerBuildDetail",
+  "\u6b63\u5728\u6821\u9a8c\u7f16\u8bd1\u4ea7\u7269\u3002": "validatingBuild",
+  "\u4e3b\u63a7\u5df2\u91cd\u542f\uff0c\u7f16\u8bd1\u4e2d\u65ad\uff0c\u8bf7\u91cd\u65b0\u7f16\u8bd1\u3002": "buildRestartedDetail",
+  "\u4e3b\u63a7\u505c\u6b62\uff0c\u7f16\u8bd1\u4e2d\u65ad\uff0c\u8bf7\u91cd\u65b0\u7f16\u8bd1\u3002": "buildStoppedDetail",
+  "\u7f16\u8bd1\u8d85\u8fc7\u4e00\u5c0f\u65f6\uff0c\u5df2\u505c\u6b62\uff0c\u8bf7\u68c0\u67e5\u65e5\u5fd7\u540e\u91cd\u8bd5\u3002": "buildTimeoutDetail",
+  "\u6b63\u5728\u51c6\u5907 Docker \u7f16\u8bd1\u73af\u5883\u3002": "buildPreparingDetail",
+  "\u7f16\u8bd1\u4ea7\u7269\u7f3a\u5931\u6216\u5927\u5c0f\u65e0\u6548\u3002": "buildArtifactInvalid",
+  "\u7f16\u8bd1\u4ea7\u7269\u6821\u9a8c\u5931\u8d25\uff0c\u8bf7\u91cd\u65b0\u7f16\u8bd1\u3002": "buildArtifactChecksum",
+  "\u7f16\u8bd1\u4efb\u52a1\u5c1a\u672a\u6210\u529f\u5b8c\u6210\uff0c\u4e0d\u80fd\u4e0b\u8f7d\u3002": "buildTaskNotReady",
+  "\u7f16\u8bd1\u4ea7\u7269\u5df2\u88ab\u79fb\u9664\uff0c\u8bf7\u91cd\u65b0\u7f16\u8bd1\u3002": "buildArtifactRemoved",
+  "\u540e\u7aef\u7f3a\u5c11 Docker CLI\uff0c\u8bf7\u4f7f\u7528\u66f4\u65b0\u540e\u7684 Compose \u914d\u7f6e\u91cd\u5efa\u670d\u52a1\u3002": "builderDockerMissing",
+  "\u540e\u7aef\u7f3a\u5c11\u88ab\u63a7\u7aef\u6e90\u7801\uff0c\u8bf7\u68c0\u67e5 CLIENT_SOURCE_DIR \u6216\u91cd\u5efa\u540e\u7aef\u955c\u50cf\u3002": "builderSourceMissing",
+  "Docker / Buildx \u4e0d\u53ef\u7528\uff0c\u8bf7\u68c0\u67e5 Docker \u670d\u52a1\u3001socket \u6302\u8f7d\u53ca DOCKER_GID \u6743\u9650\u3002": "builderDockerUnavailable",
+  "\u65e0\u6cd5\u8fde\u63a5 Docker\uff0c\u8bf7\u68c0\u67e5 Docker \u670d\u52a1\u548c socket \u6743\u9650\u3002": "builderDockerConnectFailed",
+  "\u8bbe\u5907\u4e0a\u7ebf\u540e\u53ef\u91cd\u65b0\u4e0b\u53d1": "upgradeWaitingOnlineReinstall",
+  "\u6b64\u88ab\u63a7\u7aef\u6682\u4e0d\u652f\u6301\u540c\u7248\u672c\u91cd\u65b0\u4e0b\u53d1\uff0c\u8bf7\u5148\u5347\u7ea7\u81f3\u652f\u6301\u6b64\u529f\u80fd\u7684\u7248\u672c": "upgradeLegacyReinstall",
+  "\u6b64\u8fd0\u884c\u6a21\u5f0f\u4e0d\u652f\u6301\u5728\u7ebf\u4e0b\u53d1\uff0c\u8bf7\u624b\u52a8\u66ff\u6362\u7a0b\u5e8f": "upgradeModeReinstall",
+  "\u7a0b\u5e8f\u6b63\u5728\u4e0b\u53d1\uff0c\u8bf7\u7b49\u5f85\u5b8c\u6210": "upgradeInProgressDescription",
+};
+
+export function translateServerText(value: string | null | undefined, translator: Translator = i18n.t.bind(i18n)) {
+  if (!value) return value || "";
+  const key = exactKeys[value];
+  if (key) return translator(key);
+  const failedBuild = value.match(/^Docker \u7f16\u8bd1\u5931\u8d25\uff08\u9000\u51fa\u7801 (\d+)\uff09\uff0c\u8bf7\u67e5\u770b\u7f16\u8bd1\u65e5\u5fd7\u3002$/);
+  if (failedBuild) return translator("buildFailedDetail", { code: failedBuild[1] });
+  const invalidUpgrade = value.match(/^\u5347\u7ea7\u5305\u6216\u7248\u672c\u4fe1\u606f\u65e0\u6548：(.+)$/);
+  if (invalidUpgrade) return translator("upgradeMetadataInvalid", { error: invalidUpgrade[1] });
+  return value;
+}

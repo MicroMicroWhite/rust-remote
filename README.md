@@ -15,19 +15,19 @@ The Rust agent opens an outbound authenticated WebSocket connection and reconnec
 
 The protected entrance keeps the management console private while providing a focused administrator sign-in page.
 
-![Rust Remote login page](images/login.png)
+![Rust Remote login page](images/en/login.png)
 
 ### Device overview
 
 The home screen summarizes total, online, and offline devices and provides quick filters for operating system, version, address, and status.
 
-![Rust Remote device management](images/home.png)
+![Rust Remote device management](images/en/home.png)
 
 ### Connection details
 
 The device workspace brings together system resources, network addresses, runtime identity, processes, ports, files, terminal access, and connection history.
 
-![Rust Remote connection details](images/device-detail.png)
+![Rust Remote connection details](images/en/device-detail.png)
 
 ## Features
 

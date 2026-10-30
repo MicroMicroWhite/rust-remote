@@ -1,3 +1,6 @@
+import i18n from "./i18n";
+import { translateServerText } from "./serverText";
+
 const entrance = location.pathname.split("/").filter(Boolean)[0] || "";
 export const validEntrance = /^[a-f0-9]{8}$/.test(entrance);
 const base = `/${entrance}/api`;
@@ -38,9 +41,9 @@ export async function api<T>(
   if (!response.ok) {
     if (response.status === 401 && path !== "/login" && path !== "/session")
       window.dispatchEvent(new Event("session-expired"));
-    const body = await response.json().catch(() => ({ detail: "请求失败" }));
+    const body = await response.json().catch(() => ({ detail: i18n.t("requestFailedFallback") }));
     const detail =
-      typeof body.detail === "string" ? body.detail : "请求参数不正确";
+      typeof body.detail === "string" ? translateServerText(body.detail) : i18n.t("invalidRequest");
     throw new Error(
       `${detail} · ${response.headers.get("X-Request-ID") || response.status}`,
     );
@@ -72,8 +75,8 @@ export async function downloadFile(path: string, name: string) {
   if (!response.ok) {
     if (response.status === 401)
       window.dispatchEvent(new Event("session-expired"));
-    const body = await response.json().catch(() => ({ detail: "下载失败" }));
-    throw new Error(body.detail);
+    const body = await response.json().catch(() => ({ detail: i18n.t("downloadFailed") }));
+    throw new Error(translateServerText(body.detail));
   }
   const url = URL.createObjectURL(await response.blob());
   const a = document.createElement("a");

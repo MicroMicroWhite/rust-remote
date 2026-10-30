@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type Poin
 import { Alert, Button, Dropdown, Input, Modal, Select, Space, Switch, Tag } from "antd";
 import { Keyboard, Monitor, MousePointer2, Play, RefreshCw, Square } from "lucide-react";
 import { command, screenSocket } from "./api";
+import { useTranslation } from "react-i18next";
 
 type Props = { id: string; setError: (error: string) => void; inputSupported: boolean };
 type DesktopInput = { kind: string; [key: string]: unknown };
@@ -25,6 +26,7 @@ function modifiers(event: { ctrlKey: boolean; altKey: boolean; shiftKey: boolean
 }
 
 export default function ScreenView({ id, setError, inputSupported }: Props) {
+  const { t } = useTranslation();
   const [src, setSrc] = useState("");
   const [running, setRunning] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -71,7 +73,7 @@ export default function ScreenView({ id, setError, inputSupported }: Props) {
 
   const showFrame = useCallback((data: string) => {
     setSrc(`data:image/jpeg;base64,${data}`);
-    setUpdated(new Date().toLocaleTimeString("zh-CN", { hour12: false }));
+    setUpdated(new Date().toLocaleTimeString(undefined, { hour12: false }));
   }, []);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export default function ScreenView({ id, setError, inputSupported }: Props) {
       if (!active) return;
       try {
         const value = JSON.parse(event.data);
-        if (value.type === "error") { failed(value.detail || "屏幕连接中断，请重新开始观察。"); return; }
+        if (value.type === "error") { failed(value.detail || t("screenConnectionInterrupted")); return; }
         if (value.type !== "frame" || typeof value.data !== "string") return;
         setConnected(true);
         showFrame(value.data);
@@ -105,10 +107,10 @@ export default function ScreenView({ id, setError, inputSupported }: Props) {
           setActualFps(Math.round(counter.count * 10000 / elapsed) / 10);
           frameCount.current = { started: performance.now(), count: 0 };
         }
-      } catch { failed("收到无效的屏幕数据，请重新开始观察。"); }
+      } catch { failed(t("invalidScreenData")); }
     };
-    ws.onerror = () => failed("屏幕连接失败，请检查设备在线状态后重试。");
-    ws.onclose = () => failed("屏幕连接已断开，请重新开始观察。");
+    ws.onerror = () => failed(t("screenConnectionFailed"));
+    ws.onclose = () => failed(t("screenConnectionClosed"));
     return () => {
       active = false;
       socket.current = null;
@@ -200,56 +202,56 @@ export default function ScreenView({ id, setError, inputSupported }: Props) {
 
   return <section className="table-panel screen-panel">
     <div className="table-toolbar screen-toolbar">
-      <div className="toolbar-title">主屏幕
-        <Tag color={connected ? "processing" : "default"}>{running ? connected ? "观察中" : "正在连接" : "已暂停"}</Tag>
-        {connected && <span className="secondary-text">实际 {actualFps} FPS</span>}
+      <div className="toolbar-title">{t("mainScreen")}
+        <Tag color={connected ? "processing" : "default"}>{running ? connected ? t("watching") : t("connectingScreen") : t("paused")}</Tag>
+        {connected && <span className="secondary-text">{t("actualFps", { fps: actualFps })}</span>}
       </div>
       <Space wrap>
-        <label className="screen-fps-label">目标帧率
-          <Select aria-label="屏幕帧率" value={fps} className="screen-fps" options={[1, 5, 10, 15, 20, 30].map((value) => ({ value, label: `${value} FPS` }))}
+        <label className="screen-fps-label">{t("targetFps")}
+          <Select aria-label={t("screenFps")} value={fps} className="screen-fps" options={[1, 5, 10, 15, 20, 30].map((value) => ({ value, label: `${value} FPS` }))}
             onChange={(value) => { setFps(value); if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify({ type: "configure", fps: value })); }} />
         </label>
-        <Button icon={<RefreshCw size={14} />} loading={capturing} disabled={running} onClick={() => void capture()}>获取截图</Button>
+        <Button icon={<RefreshCw size={14} />} loading={capturing} disabled={running} onClick={() => void capture()}>{t("capture")}</Button>
         <Button type={running ? "default" : "primary"} icon={running ? <Square size={14} /> : <Play size={14} />}
           disabled={capturing} onClick={() => {
             stopControl(); setConnected(false); setActualFps(0); setError(""); setRunning(!running);
-          }}>{running ? "暂停观察" : "开始观察"}</Button>
+          }}>{running ? t("pauseWatching") : t("startWatching")}</Button>
       </Space>
     </div>
     <div className="screen-control-toolbar">
       <label className="switch-field"><Switch size="small" checked={control} disabled={!connected || !inputSupported}
-        aria-label="鼠标与键盘控制" onChange={(value) => {
+        aria-label={t("mouseKeyboard")} onChange={(value) => {
           if (!value) { stopControl(); return; }
           controlEnabled.current = true; setControl(true); viewport.current?.focus({ preventScroll: true });
-        }} /><MousePointer2 size={14} />鼠标与键盘</label>
-      <span className="secondary-text">{enabled ? focused ? "键盘已连接，按键将发送到设备" : "点击画面后输入按键" : "开启观察后可启用控制"}</span>
+        }} /><MousePointer2 size={14} />{t("mouseKeyboard")}</label>
+      <span className="secondary-text">{enabled ? focused ? t("keyboardConnected") : t("clickScreenInput") : t("enableWatchingControl")}</span>
       <Space wrap>
         <Dropdown disabled={!enabled} trigger={["click"]} menu={{ items: shortcuts.map((item, i) => ({ key: String(i), label: item.label })),
           onClick: ({ key }) => { const item = shortcuts[Number(key)]; void enqueue({ kind: "key", key: item.key, modifiers: item.modifiers }); viewport.current?.focus({ preventScroll: true }); } }}>
-          <Button size="small" icon={<Keyboard size={14} />} disabled={!enabled}>发送按键</Button>
+          <Button size="small" icon={<Keyboard size={14} />} disabled={!enabled}>{t("sendKey")}</Button>
         </Dropdown>
-        <Button size="small" disabled={!enabled} onClick={() => setTextOpen(true)}>输入文字</Button>
+        <Button size="small" disabled={!enabled} onClick={() => setTextOpen(true)}>{t("inputText")}</Button>
       </Space>
     </div>
-    {!inputSupported && <Alert className="inline-alert" type="info" showIcon title="升级被控端后可启用鼠标和键盘控制。" />}
+    {!inputSupported && <Alert className="inline-alert" type="info" showIcon title={t("upgradeForInput")} />}
     <div ref={viewport} className={`screen-preview ${src ? "has-image" : ""} ${enabled ? "screen-controlling" : ""}`}
-      tabIndex={enabled ? 0 : -1} role="application" aria-label="远程屏幕，点击画面后可使用键盘"
+      tabIndex={enabled ? 0 : -1} role="application" aria-label={t("remoteScreen")}
       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onPointerDown={pointer} onKeyDown={keyboard}
       onContextMenu={(event) => { if (enabled) event.preventDefault(); }}>
-      {src ? <img ref={image} src={src} alt="受控设备当前主屏幕" draggable={false} />
-        : <div className="screen-placeholder"><Monitor size={42} strokeWidth={1} /><strong>尚未获取屏幕画面</strong><p>点击“开始观察”连续查看，或单独获取一张截图。</p></div>}
+      {src ? <img ref={image} src={src} alt={t("currentScreen")} draggable={false} />
+        : <div className="screen-placeholder"><Monitor size={42} strokeWidth={1} /><strong>{t("noScreen")}</strong><p>{t("screenHint")}</p></div>}
     </div>
-    <div className="panel-note">{updated ? `最近画面 ${updated}。` : ""}默认 15 FPS，可调 1–30 FPS，实际帧率取决于设备性能和网络。
-      {enabled && " 支持左键、右键、双击和滚轮；键盘仅在画面获得焦点时发送，Shift + Esc 退出控制，中文可用“输入文字”。"}
-      {!running && src && " 当前为暂停时保留的画面。"}</div>
-    <Modal title="向设备输入文字" open={textOpen} okText="发送文字" cancelText="取消" confirmLoading={textSending}
+    <div className="panel-note">{updated ? t("recentFrame", { time: updated }) : ""}{t("screenNote")}
+      {enabled && ` ${t("screenControlNote")}`}
+      {!running && src && ` ${t("pausedFrame")}`}</div>
+    <Modal title={t("inputToDevice")} open={textOpen} okText={t("sendText")} cancelText={t("cancel")} confirmLoading={textSending}
       okButtonProps={{ disabled: !text || !enabled || new TextEncoder().encode(text).length > 4096 }}
       onCancel={() => { if (!textSending) setTextOpen(false); }}
       onOk={async () => { if (textSending || !text || !enabled) return; setTextSending(true);
         const sent = await enqueue({ kind: "text", text }); setTextSending(false);
         if (sent) { setText(""); setTextOpen(false); viewport.current?.focus({ preventScroll: true }); } }}>
-      <p className="screen-text-note">文字将输入到被控设备当前获得焦点的应用中。</p>
-      <Input.TextArea aria-label="发送到设备的文字" autoFocus rows={5} value={text} onChange={(e) => setText(e.target.value)} disabled={textSending} maxLength={4096} />
+      <p className="screen-text-note">{t("textInputNote")}</p>
+      <Input.TextArea aria-label={t("sendToDevice")} autoFocus rows={5} value={text} onChange={(e) => setText(e.target.value)} disabled={textSending} maxLength={4096} />
     </Modal>
   </section>;
 }
