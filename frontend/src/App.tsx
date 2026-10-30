@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 import { api, setCsrf, validEntrance } from "./api";
 import { ThemeSwitch } from "./theme";
+import { LanguageSwitch } from "./i18n";
+import { useTranslation } from "react-i18next";
 import { navigate, useRoute } from "./navigation";
 import { Loading, PageHeader } from "./ui";
 import { BrandMark } from "./BrandMark";
@@ -54,6 +56,7 @@ export default function App() {
   );
 }
 function Session() {
+  const { t } = useTranslation();
   const [session, setSession] = useState<"loading" | "guest" | "ready">(
     "loading",
   );
@@ -78,7 +81,7 @@ function Session() {
     const expire = () => {
       setSession("guest");
       setCsrf("");
-      setError("会话已过期，请重新登录。");
+      setError(t("expired"));
     };
     window.addEventListener("session-expired", expire);
     return () => {
@@ -120,8 +123,8 @@ function Session() {
       <div className="login">
         <Result
           status="404"
-          title="入口不存在"
-          subTitle="请使用安装时生成的控制台入口地址。"
+          title={t("invalidEntry")}
+          subTitle={t("invalidEntryHint")}
         />
       </div>
     );
@@ -135,6 +138,7 @@ function Session() {
     return (
       <div className="login">
         <div className="login-theme">
+          <LanguageSwitch />
           <ThemeSwitch />
         </div>
         <div className="login-shell">
@@ -146,9 +150,9 @@ function Session() {
             </span>
           </div>
           <section className="login-card">
-            <div className="login-kicker"><LockKeyhole size={15} /> 管理员登录</div>
-            <h1>欢迎回来。</h1>
-            <p className="muted">输入管理密码，进入你的设备工作台。</p>
+            <div className="login-kicker"><LockKeyhole size={15} /> {t("login")}</div>
+            <h1>{t("welcome")}</h1>
+            <p className="muted">{t("loginHint")}</p>
             <Form
               layout="vertical"
               onFinish={login}
@@ -157,12 +161,12 @@ function Session() {
             >
               <Form.Item
                 name="password"
-                label="管理密码"
-                rules={[{ required: true, message: "请输入管理密码" }]}
+                label={t("password")}
+                rules={[{ required: true, message: t("passwordRequired") }]}
               >
                 <Input.Password
                   prefix={<LockKeyhole size={16} />}
-                  placeholder="请输入管理密码"
+                  placeholder={t("passwordPlaceholder")}
                   autoComplete="current-password"
                   autoFocus
                 />
@@ -176,20 +180,20 @@ function Session() {
                 />
               )}
               <Button type="primary" htmlType="submit" loading={busy} block>
-                进入控制台 <ArrowRight size={16} />
+                {t("enterConsole")} <ArrowRight size={16} />
               </Button>
             </Form>
             <div className="login-foot">
               <ShieldCheck size={14} />
-              仅限授权管理员访问
+              {t("authorizedOnly")}
             </div>
           </section>
           <div className="login-copyright">Rust Remote · 远程设备管理</div>
           </main>
           <aside className="login-visual" aria-label="远程设备管理介绍">
-            <div className="login-visual-top"><span>远程设备管理</span><span className="login-visual-chip"><i /> 连接正常</span></div>
+            <div className="login-visual-top"><span>{t("remoteManagement")}</span><span className="login-visual-chip"><i /> {t("connected")}</span></div>
             <div className="login-orbit"><div className="login-orbit-ring login-orbit-ring-one" /><div className="login-orbit-ring login-orbit-ring-two" /><BrandMark /><span className="login-orbit-dot login-orbit-dot-one" /><span className="login-orbit-dot login-orbit-dot-two" /></div>
-            <div className="login-visual-copy"><span>设备工作台</span><h2>设备，都在这里。</h2><p>查看设备状态，执行远程操作，发布客户端更新。</p><div className="login-visual-stats"><div><strong>24/7</strong><span>持续连接</span></div><div><strong>WSS</strong><span>加密连接</span></div><div><strong>LIVE</strong><span>实时状态</span></div></div></div>
+            <div className="login-visual-copy"><span>{t("workspace")}</span><h2>{t("allHere")}</h2><p>{t("workspaceHint")}</p><div className="login-visual-stats"><div><strong>24/7</strong><span>{t("alwaysOn")}</span></div><div><strong>WSS</strong><span>{t("encrypted")}</span></div><div><strong>LIVE</strong><span>{t("live")}</span></div></div></div>
           </aside>
         </div>
       </div>
@@ -206,6 +210,7 @@ function Console({
   logoutBusy: boolean;
   sessionError: string;
 }) {
+  const { t } = useTranslation();
   const { page, deviceId, tab } = useRoute();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -242,16 +247,16 @@ function Console({
   }, [page, deviceId]);
   const device = devices.find((d) => d.id === deviceId);
   const labels = {
-    devices: "设备管理",
-    connections: "上下线记录",
-    audit: "操作审计",
-    "client-config": "被控端配置",
+    devices: t("management"),
+    connections: t("connections"),
+    audit: t("audit"),
+    "client-config": t("clientConfig"),
   };
   const items = [
-    { key: "devices", icon: <LayoutDashboard size={17} />, label: "设备管理" },
-    { key: "client-config", icon: <Settings2 size={17} />, label: "被控端配置" },
-    { key: "connections", icon: <Activity size={17} />, label: "上下线记录" },
-    { key: "audit", icon: <ShieldCheck size={17} />, label: "操作审计" },
+    { key: "devices", icon: <LayoutDashboard size={17} />, label: t("management") },
+    { key: "client-config", icon: <Settings2 size={17} />, label: t("clientConfig") },
+    { key: "connections", icon: <Activity size={17} />, label: t("connections") },
+    { key: "audit", icon: <ShieldCheck size={17} />, label: t("audit") },
   ];
   const menu = (compact = false) => (
     <Menu
@@ -269,21 +274,21 @@ function Console({
     <PageTransition key={`${page}:${deviceId ?? ""}`} loading={loading}>
       <div className={`admin-layout ${collapsed ? "nav-collapsed" : ""}`}>
         <aside className="desktop-sidebar">
-          <a className="brand" href="#/devices" aria-label="Rust Remote 首页">
+          <a className="brand" href="#/devices" aria-label={t("brandHome")}>
             <BrandMark />
             {!collapsed && (
               <span>
-                Rust Remote<small>管理控制台</small>
+                Rust Remote<small>{t("consoleSubtitle")}</small>
               </span>
             )}
           </a>
           <div className="navigation-label">
-            {collapsed ? "管理" : "设备与运维"}
+            {collapsed ? t("managementShort") : t("managementNav")}
           </div>
           {menu(collapsed)}
           <div className="sidebar-footer">
             <ShieldCheck size={15} />
-            {!collapsed && <span>管理员工作空间</span>}
+            {!collapsed && <span>{t("adminWorkspace")}</span>}
           </div>
         </aside>
         <Drawer
@@ -299,11 +304,11 @@ function Console({
         <div className="workspace">
           <header className="topbar">
             <div className="topbar-left">
-              <Tooltip title={collapsed ? "展开菜单" : "收起菜单"}>
+              <Tooltip title={collapsed ? t("expandMenu") : t("collapseMenu")}>
                 <Button
                   type="text"
                   className="desktop-collapse"
-                  aria-label={collapsed ? "展开菜单" : "收起菜单"}
+                  aria-label={collapsed ? t("expandMenu") : t("collapseMenu")}
                   icon={
                     collapsed ? (
                       <PanelLeftOpen size={18} />
@@ -317,25 +322,26 @@ function Console({
               <Button
                 type="text"
                 className="mobile-menu"
-                aria-label="打开菜单"
+                aria-label={t("openMenu")}
                 icon={<MenuIcon size={19} />}
                 onClick={() => setMobileNav(true)}
               />
               <Breadcrumb
                 items={[
-                  { title: "控制台" },
+                  { title: t("console") },
                   {
                     title: deviceId ? (
-                      <a href="#/devices">设备管理</a>
+                      <a href="#/devices">{t("management")}</a>
                     ) : (
                       labels[page]
                     ),
                   },
-                  ...(deviceId ? [{ title: device?.name || "设备详情" }] : []),
+                    ...(deviceId ? [{ title: device?.name || t("deviceDetail") }] : []),
                 ]}
               />
             </div>
             <div className="topbar-actions">
+              <LanguageSwitch />
               <ThemeSwitch />
               <span className="header-divider" />
               <Dropdown
@@ -344,7 +350,7 @@ function Console({
                   items: [
                     {
                       key: "logout",
-                      label: "退出登录",
+                      label: t("logout"),
                       icon: <LogOut size={15} />,
                       disabled: logoutBusy,
                       onClick: logout,
@@ -352,9 +358,9 @@ function Console({
                   ],
                 }}
               >
-                <Button type="text" className="user-menu" aria-label="管理员菜单">
+                <Button type="text" className="user-menu" aria-label={t("administrator")}>
                   <Avatar size={26} icon={<ShieldCheck size={14} />} />
-                  <span>管理员</span>
+                  <span>{t("administrator")}</span>
                   <ChevronDown size={12} />
                 </Button>
               </Dropdown>
@@ -366,11 +372,11 @@ function Console({
                 className="page-alert"
                 type="error"
                 showIcon
-                title="请求失败"
+                title={t("requestFailed")}
                 description={error || sessionError}
                 action={
                   <Button size="small" onClick={() => void refresh()}>
-                    重试
+                    {t("retry")}
                   </Button>
                 }
               />
@@ -383,8 +389,8 @@ function Console({
               ) : page === "connections" ? (
                 <>
                   <PageHeader
-                    title="上下线记录"
-                    description="查看设备连接时间、连接时长及断开原因。"
+                    title={t("connections")}
+                    description={t("connectionHint")}
                   />
                   <ConnectionHistory
                     onDevice={(id) =>
@@ -400,11 +406,11 @@ function Console({
                 ) : (
                   <Result
                     status="404"
-                    title="设备不存在"
-                    subTitle="该设备可能尚未连接，或地址已失效。"
+                    title={t("deviceMissing")}
+                    subTitle={t("deviceMissingHint")}
                     extra={
                       <Button type="primary" onClick={() => navigate("/devices")}>
-                        返回设备列表
+                        {t("backToDevices")}
                       </Button>
                     }
                   />
@@ -422,7 +428,7 @@ function Console({
             </Suspense>
             <footer className="app-footer">
               <span>Rust Remote</span>
-              <span>设备管理控制台</span>
+              <span>{t("consoleSubtitle")}</span>
             </footer>
           </main>
         </div>

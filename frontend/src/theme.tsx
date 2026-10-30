@@ -8,7 +8,10 @@ import {
 } from "react";
 import { ConfigProvider, Segmented, theme } from "antd";
 import zhCN from "antd/locale/zh_CN";
+import enUS from "antd/locale/en_US";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import "./i18n";
 
 type Mode = "light" | "dark" | "system";
 const ThemeContext = createContext<{
@@ -17,6 +20,7 @@ const ThemeContext = createContext<{
 }>({ mode: "system", setMode: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { i18n } = useTranslation();
   const [mode, setMode] = useState<Mode>(() => {
     try {
       const saved = localStorage.getItem("remote-theme");
@@ -43,7 +47,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider value={{ mode, setMode }}>
       <ConfigProvider
-        locale={zhCN}
+        locale={i18n.language.startsWith("en") ? enUS : zhCN}
         theme={{
           algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
           token: {
@@ -80,10 +84,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function ThemeSwitch() {
   const { mode, setMode } = useContext(ThemeContext);
+  const { t } = useTranslation();
   return (
     <Segmented<Mode>
       className="theme-switch"
-      aria-label="外观模式"
+      aria-label={t("appearance")}
       value={mode}
       onChange={setMode}
       options={[
@@ -92,7 +97,7 @@ export function ThemeSwitch() {
           label: (
             <span>
               <Sun size={14} />
-              浅色
+              {t("light")}
             </span>
           ),
         },
@@ -101,7 +106,7 @@ export function ThemeSwitch() {
           label: (
             <span>
               <Moon size={14} />
-              深色
+              {t("dark")}
             </span>
           ),
         },
@@ -110,7 +115,7 @@ export function ThemeSwitch() {
           label: (
             <span>
               <Monitor size={14} />
-              自动
+              {t("system")}
             </span>
           ),
         },

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Badge, Empty, Spin } from "antd";
+import { useTranslation } from "react-i18next";
+import i18n from "./i18n";
 
 export function PageHeader({
   title,
@@ -21,18 +23,20 @@ export function PageHeader({
   );
 }
 export function DeviceStatus({ online }: { online: boolean }) {
+  const { t } = useTranslation();
   return (
     <Badge
       status={online ? "success" : "default"}
-      text={online ? "在线" : "离线"}
+      text={online ? t("online") : t("offline")}
     />
   );
 }
 export function Loading() {
+  const { t } = useTranslation();
   return (
     <div className="loading-state">
       <Spin />
-      <span>正在加载…</span>
+      <span>{t("loading")}</span>
     </div>
   );
 }
@@ -45,5 +49,5 @@ export const pagination = {
   defaultPageSize: 20,
   showSizeChanger: true,
   pageSizeOptions: [20, 50, 100],
-  showTotal: (total: number) => `共 ${total} 条`,
+  showTotal: (total: number) => i18n.t("total", { count: total }),
 };
