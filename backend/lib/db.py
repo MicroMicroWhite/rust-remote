@@ -155,6 +155,25 @@ class Database:
         with self.connect() as db:
             db.execute("UPDATE devices SET last_seen=? WHERE id=?", (time.time(), device_id))
 
+    def delete_device(self, device_id):
+        """Remove a device and its controller-owned state.
+
+        Audit records intentionally remain so that administrative history is
+        still available after a stale device is removed.
+        """
+        with self.connect() as db:
+            row = db.execute("SELECT * FROM devices WHERE id=?", (device_id,)).fetchone()
+            if not row:
+                return None
+            for table in ('device_networks', 'device_systems', 'device_connections'):
+                db.execute(f"DELETE FROM {table} WHERE device_id=?", (device_id,))
+            # Upgrade storage is initialized after Database construction, so
+            # keep this method usable in standalone database tests too.
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='device_upgrades'").fetchone():
+                db.execute("DELETE FROM device_upgrades WHERE device_id=?", (device_id,))
+            db.execute("DELETE FROM devices WHERE id=?", (device_id,))
+            return dict(row)
+
     def start_connection(self, device_id):
         now = time.time()
         with self.connect() as db:

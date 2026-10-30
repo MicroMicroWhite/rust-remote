@@ -148,6 +148,35 @@ def test_timeout_offline_and_validation(client):
         assert client.app.state.hub.connections['device-1'].pending == {}
 
 
+def test_delete_only_offline_devices_and_clear_controller_state(client):
+    login(client)
+    db = client.app.state.db
+    with client.websocket_connect('/agent/ws', headers={'Authorization': 'Bearer ' + TOKEN}) as ws:
+        ws.send_json(HELLO)
+        assert ws.receive_json()['type'] == 'welcome'
+        assert client.delete(BASE + '/devices/device-1').status_code == 409
+        assert client.get(BASE + '/devices').json()[0]['id'] == 'device-1'
+
+    connection_id = db.start_connection('device-1')
+    db.end_connection(connection_id, 'disconnected')
+    db.update_networks('device-1', {'local_addresses': [{'interface': 'eth0', 'address': '10.0.0.2'}]})
+    db.update_system('device-1', {'os': 'Linux'})
+    with db.connect() as connection:
+        connection.execute('INSERT INTO device_upgrades VALUES (?,?,?,?,?,?,?,?,?)',
+                           ('upgrade-1', 'device-1', '1.0.0', 'success', 100, 'done', 1, 1, 0))
+
+    response = client.delete(BASE + '/devices/device-1')
+    assert response.status_code == 200
+    assert response.json() == {'ok': True}
+    assert client.get(BASE + '/devices').json() == []
+    with db.connect() as connection:
+        assert connection.execute('SELECT COUNT(*) FROM devices WHERE id=?', ('device-1',)).fetchone()[0] == 0
+        for table in ('device_networks', 'device_systems', 'device_connections', 'device_upgrades'):
+            assert connection.execute(f'SELECT COUNT(*) FROM {table} WHERE device_id=?', ('device-1',)).fetchone()[0] == 0
+    audit = client.get(BASE + '/audit').json()
+    assert any(row['action'] == 'device.delete' and row['device_id'] == 'device-1' for row in audit)
+
+
 def test_device_system_details_survive_disconnect_and_legacy_reconnect(client):
     login(client)
     system = {'os': 'Debian GNU/Linux 12 (bookworm)', 'distribution_id': 'debian',

@@ -285,6 +285,22 @@ def create_app(settings: Settings | None = None):
     async def upgrade(device_id: str, request: Request, body: UpgradeRequest | None = None):
         return await app.state.upgrades.start(device_id, request, reinstall=body.reinstall if body else False)
 
+    @app.delete(prefix + '/devices/{device_id}', dependencies=[Depends(authenticated)])
+    def delete_device(device_id: str, request: Request):
+        # Deleting an online device would allow a live client to immediately
+        # recreate the record and could discard state during an operation.
+        if device_id in hub.connections:
+            raise HTTPException(409, '在线设备不能删除，请先等待设备离线。')
+        if device_id in app.state.upgrades.tasks:
+            raise HTTPException(409, '设备正在升级，请等待升级完成。')
+        device = app.state.db.delete_device(device_id)
+        if not device:
+            raise HTTPException(404, '设备不存在')
+        app.state.db.audit(request.state.trace_id, device_id, 'device.delete', 'success',
+                           '已删除离线设备及其主控缓存。', target=device['name'],
+                           source_ip=request.client.host if request.client else None)
+        return {'ok': True}
+
     @app.get(prefix + "/audit", dependencies=[Depends(authenticated)])
     def audit():
         with app.state.db.connect() as db:
@@ -305,7 +321,7 @@ def create_app(settings: Settings | None = None):
             values.append(status)
         if category:
             conditions.append({'auth': "a.action IN ('login','logout')", 'files': "a.action LIKE 'fs.%'",
-                               'shell': "a.action IN ('shell.exec','terminal.session')", 'system': "a.action IN ('system.info','system.environment','screen.capture','screen.observe','screen.input','ports.list','process.list','process.kill','agent.update','agent.reinstall','client.build','client.config','client.download','client.publish','client.delete')"}[category])
+                               'shell': "a.action IN ('shell.exec','terminal.session')", 'system': "a.action IN ('system.info','system.environment','screen.capture','screen.observe','screen.input','ports.list','process.list','process.kill','agent.update','agent.reinstall','client.build','client.config','client.download','client.publish','client.delete','device.delete')"}[category])
         if search:
             conditions.append("(COALESCE(d.name,'') || ' ' || COALESCE(a.device_id,'') || ' ' || a.target || ' ' || a.trace_id || ' ' || a.detail) LIKE ?")
             values.append('%' + search + '%')

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import {
+  App,
   Button,
   Grid,
   Input,
+  Popconfirm,
   Select,
   Table,
   Tabs,
@@ -16,6 +18,7 @@ import {
   Monitor,
   RefreshCw,
   Search,
+  Trash2,
 } from "lucide-react";
 import type { Device } from "./types";
 import DeviceUpgrade from "./DeviceUpgrade";
@@ -26,6 +29,7 @@ import { dateTime } from "./format";
 import { navigate } from "./navigation";
 import { DeviceStatus, EmptyState, PageHeader, pagination } from "./ui";
 import { useTranslation } from "react-i18next";
+import { api } from "./api";
 
 export default function DeviceList({
   devices: reportedDevices,
@@ -43,6 +47,7 @@ export default function DeviceList({
   syncFailed: boolean;
 }) {
   const { t } = useTranslation();
+  const { message } = App.useApp();
   const { token } = theme.useToken();
   const devices = useDeviceSystems(reportedDevices);
   const [status, setStatus] = useState("online");
@@ -51,6 +56,7 @@ export default function DeviceList({
   const [versionFilter, setVersionFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [deleting, setDeleting] = useState("");
   const screens = Grid.useBreakpoint();
   const online = devices.filter((d) => d.online).length;
   const filtered = devices.filter(
@@ -73,6 +79,18 @@ export default function DeviceList({
     setPlatform("");
     setVersionFilter("");
     setPage(1);
+  }
+  async function deleteDevice(device: Device) {
+    setDeleting(device.id);
+    try {
+      await api(`/devices/${encodeURIComponent(device.id)}`, { method: "DELETE" });
+      void message.success(t("deviceDeleted"));
+      refresh();
+    } catch (e) {
+      void message.error((e as Error).message);
+    } finally {
+      setDeleting("");
+    }
   }
   const open = (device: Device) =>
     navigate(`/devices/${encodeURIComponent(device.id)}/overview`);
@@ -166,6 +184,30 @@ export default function DeviceList({
             {d.online ? t("manageDevice") : t("viewDetails")}
           </Button>
           <DeviceUpgrade device={d} compact />
+          {!d.online && (
+            <Popconfirm
+              title={t("deleteDeviceConfirm")}
+              description={t("deleteDeviceNote")}
+              onConfirm={() => void deleteDevice(d)}
+              okText={t("confirmDelete")}
+              cancelText={t("cancel")}
+              okButtonProps={{ danger: true }}
+              disabled={!!deleting}
+            >
+              <Button
+                danger
+                type="text"
+                size="small"
+                icon={<Trash2 size={14} />}
+                aria-label={`${t("delete")} ${d.name}`}
+                title={t("deleteDevice")}
+                loading={deleting === d.id}
+                disabled={!!deleting}
+              >
+                {t("delete")}
+              </Button>
+            </Popconfirm>
+          )}
         </div>
       ),
     },

@@ -3,6 +3,7 @@ ACTION_LABELS = {
     'client.config': '保存被控端配置', 'client.build': '编译被控端', 'client.download': '下载被控端',
     'agent.update': '升级被控端程序', 'client.publish': '发布被控端升级版本',
     'client.delete': '删除被控端编译记录', 'agent.reinstall': '重新下发被控端程序',
+    'device.delete': '删除离线设备',
     'login': '登录控制台', 'logout': '退出登录', 'system.info': '读取系统信息',
     'system.environment': '读取环境变量',
     'screen.capture': '获取屏幕截图', 'fs.list': '浏览目录', 'fs.mkdir': '创建目录',

@@ -228,7 +228,6 @@ export default function DeviceWorkspace({
                         <span className="resource-tags">
                           <Tag>{info.cpu_count} {t("cores")}</Tag>
                           <Tag>{info.arch}</Tag>
-                          <strong>{Math.round(info.cpu_usage ?? 0)}%</strong>
                         </span>
                       </div>
                       <Progress
