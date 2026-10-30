@@ -9,6 +9,26 @@ A self-hosted remote device management platform for Windows and Linux. Rust Remo
 
 The Rust agent opens an outbound authenticated WebSocket connection and reconnects automatically. Managed devices do not need inbound ports or a public IP address.
 
+## Screenshots
+
+### Secure login
+
+The protected entrance keeps the management console private while providing a focused administrator sign-in page.
+
+![Rust Remote login page](images/login.png)
+
+### Device overview
+
+The home screen summarizes total, online, and offline devices and provides quick filters for operating system, version, address, and status.
+
+![Rust Remote device management](images/home.png)
+
+### Connection details
+
+The device workspace brings together system resources, network addresses, runtime identity, processes, ports, files, terminal access, and connection history.
+
+![Rust Remote connection details](images/device-detail.png)
+
 ## Features
 
 - Device status, system resources, network addresses, processes, ports, permissions, and audit records
