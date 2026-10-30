@@ -34,8 +34,6 @@ def main():
         env.update(REMOTE_SERVER="ws://127.0.0.1:1/agent/ws", REMOTE_TOKEN="x" * 32,
                    REMOTE_ALLOW_INSECURE="true", RUST_LOG="info")
         env.pop("REMOTE_UPDATE_READY", None)
-        log = directory / "state/rust-remote/client.log"
-
         def run(*args, environment=env):
             return subprocess.run([binary, *args], env=environment, cwd=directory,
                                   capture_output=True, text=True, timeout=10)
@@ -52,10 +50,8 @@ def main():
         try:
             result = run("--help")
             assert result.returncode == 0 and "--foreground" in result.stdout
-            assert not log.exists()
             result = run(environment=dict(env, REMOTE_TOKEN="short"))
             assert result.returncode != 0 and "at least 32" in result.stderr
-            assert not log.exists()
 
             pid = launch()
             wait_for(lambda: not stopped(pid))
@@ -64,7 +60,7 @@ def main():
             assert os.readlink(f"/proc/{pid}/fd/0") == "/dev/null"
             for fd in (1, 2):
                 assert os.readlink(f"/proc/{pid}/fd/{fd}") == "/dev/null"
-            assert not log.exists()
+            assert not (directory / "state/rust-remote/client.log").exists()
             assert (directory / ".rust-remote-device-id").is_file()
 
             duplicate = launch()
@@ -98,7 +94,7 @@ def main():
 
             failed = launch("--identity", "missing-directory/device-id")
             wait_for(lambda: stopped(failed))
-            assert "Client stopped with an error" in log.read_text()
+            assert not (directory / "state/rust-remote/client.log").exists()
 
             # Simulate upgrading a pre-background release: its restart arguments
             # do not contain --foreground. The helper must still supervise the
@@ -109,7 +105,6 @@ def main():
             original.write_text("#!/bin/sh\nexit 99\n")
             original.chmod(0o700)
             shutil.copy2(binary, staging / "payload")
-            offset = len(log.read_text())
             helper = subprocess.Popen(
                 [binary, "--internal-apply-update", str(original), str(staging),
                  "--identity", str(directory / ".rust-remote-device-id")],
@@ -120,7 +115,6 @@ def main():
                 wait_for(lambda: children.exists() and children.read_text().strip())
                 candidate = int(children.read_text().split()[0])
                 processes.append(candidate)
-                wait_for(lambda: "scheduling reconnect" in log.read_text()[offset:])
                 time.sleep(0.5)
                 assert helper.poll() is None, "Update helper stopped tracking candidate"
                 assert not stopped(candidate)
@@ -137,7 +131,7 @@ def main():
             for pid in processes:
                 if not stopped(pid):
                     os.kill(pid, signal.SIGKILL)
-    print("Linux background startup, logging, single instance, foreground, and update checks passed")
+    print("Linux background startup, silent operation, single instance, foreground, and update checks passed")
 
 
 if __name__ == "__main__":
